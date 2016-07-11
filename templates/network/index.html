@@ -1,0 +1,19 @@
+<h1>Please, make you selections:</h1>
+
+<form action="{% url 'network:display' %}" method="POST">
+{% csrf_token %}
+<select name="par1">
+  <option value="option1">Option1</option>
+  <option value="option2">Option2</option>
+  <option value="option3">Option3</option>
+  <option value="option4" selected>Option4</option>
+</select>
+
+<textarea name="desc" rows="10" cols="30">
+  Please, enter your description!
+</textarea>
+<br>
+<input type="submit" value="Run" />
+</form>
+
+

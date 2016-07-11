@@ -1,0 +1,14 @@
+<h1>Please, select a yaml file:</h1>
+
+<form action="{% url 'network:display' %}" method="POST">
+{% csrf_token %}
+<select name="yaml">
+  <option value="%">---------</option>
+  {% for k in yamlfiles %}
+  <option value="{{ k }}">{{ k }}</option>
+  {% endfor %}
+</select>
+<br>
+<input type="submit" />
+</form>
+
