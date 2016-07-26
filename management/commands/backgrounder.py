@@ -23,16 +23,21 @@ class Command(BaseCommand):
             if line[0] == '#' : 
                 continue 
 
-            linel       =    line[:-1].split('\t') 
-            rawfilename =    linel[0]
-            infilename  =    linel[1] 
-            baitsym     =    b4us(linel[2]) 
-            org         =    linel[3]
-            special     =    linel[4]
-            parser      =    linel[5] 
-            print( linel[5] )
-            bgfilename  =    linel[6] 
-            print('infile=' + infilename)
+            linel       =    line.rstrip().lstrip().split('\t')
+            print( 'line=' + str(linel) )
+            #linel       =    line.split('\t')             
+            #rawfilename =    linel[0]
+            infilename  =    linel[0] 
+            baitsym     =    b4us(linel[1]) 
+            org         =    linel[2]
+            special     =    linel[3]
+            parser      =    linel[4] 
+            bgfilename  =    linel[5] 
+            print( 'infile=' + infilename )
+            print( 'baitsym=' + baitsym )
+            print( 'org=' + org )
+            print( 'special=' + special )
+            print( 'bgfile=' + bgfilename )
             if special and special[0] == '*' : 
                 outfname_pfx   =    special[1:]+date6()
             elif special : 
@@ -64,11 +69,13 @@ class Command(BaseCommand):
 
             if org == '9606' : 
                 dataset.syncToEntrez() 
-            else : 
-                dataset.syncToEntrez( bestpepdb = 'RPMm', debug = True ) 
+                if bgfilename : 
+                    dataset.set_background( bgpath + bgfilename ) 
 
-            if bgfilename : 
-                dataset.set_background( bgpath + bgfilename ) 
+            else : 
+                dataset.syncToEntrez( bestpepdb = 'RPMm', debug = True )
+                if bgfilename : 
+                    dataset.set_background( bgpath + bgfilename, bestpepdb = 'RPMm' ) 
 
             dataset.setBait(baitsym) 
             dataset.score() 
