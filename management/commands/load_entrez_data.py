@@ -186,11 +186,12 @@ class Command(BaseCommand):
                 pickle.dump( to_pickle, open( path2 + 'hsmmg_latest', 'wb' ))
 
     def _export_domain_file( self ):
-        sql = '\n'.join(["select symbol, group_concat(distinct cdd.name SEPARATOR ' | ') names, group_concat(distinct case when length(substring_index(substring_index(description, '.', 1), ';', 1)) > 50 then concat(substring(description, 1, 50), '...') else substring_index(substring_index(description, '.', 1), ';', 1) end separator ' | ') descriptions",
+        sql = '\n'.join(["select symbol, x.taxid, group_concat(distinct cdd.name SEPARATOR ' | ') names, group_concat(distinct case when length(substring_index(substring_index(description, '.', 1), ';', 1)) > 50 then concat(substring(description, 1, 50), '...') else substring_index(substring_index(description, '.', 1), ';', 1) end separator ' | ') descriptions",
                         "from (", 
                         "select", 
                         "entrez.symbol,",
-                        "SUBSTRING_INDEX(SUBSTRING_INDEX(entrez.cdd, ';', numbers.n), ';', -1) domain",
+                         "SUBSTRING_INDEX(SUBSTRING_INDEX(entrez.cdd, ';', numbers.n), ';', -1) domain,",
+                         "entrez.taxid",
                         "from",
                         "numbers inner join entrez",
                         "on CHAR_LENGTH(entrez.cdd)",
@@ -202,7 +203,7 @@ class Command(BaseCommand):
                         "where x.domain is not null",
                         "and x.domain <> ''",
                         "and x.domain = cdd.pssm",
-                        "group by x.symbol"])
+                         "group by x.symbol, x.taxid"])
         print( sql )
 
         with connection.cursor() as c:
@@ -210,7 +211,7 @@ class Command(BaseCommand):
             data = c.fetchall()
 
         with open(domain_file, 'wt') as df:
-            for ( symb, doms, descs ) in data:
+            for ( symb, org, doms, descs ) in data:
                 df.write( '\t'.join( [symb, doms, descs] ) + '\n')
         
             
