@@ -13,11 +13,29 @@ if os.path.exists( final ):
     os.rename( final, final+'_old' )
 files  = { 'http://thebiogrid.org/downloads/archives/Latest%20Release/BIOGRID-ALL-LATEST.tab2.zip' : [ path+'biogrid.zip', path+'biogrid_latest' ]}
 
-skip_pmids = ['26186194', '22939629'] # skip bioplex and emili data 
+src_by_pmids = {'26186194': 'BIOPLEX', '22939629': 'EMILI', '26344197': 'EMILIv2', } # skip these datasets - they are loaded separately
 
 class Command(BaseCommand):
     args = '<foo bar ...>'
     help = 'our help string comes here'
+
+    def add_arguments(self, parser):
+        # Named (optional) arguments
+        parser.add_argument(
+            '--reload',
+            action  = 'store_true',
+            dest    = 'reload',
+            default = False,
+            help    = 'Reload table and do nothing else',
+        )
+        parser.add_argument(
+            '--reparse',
+            action  = 'store_true',
+            dest    = 'reparse',
+            default = False,
+            help    = 'Reparse previously downloaded data and reload table',
+        )
+        
 
     def _download_from_biogrid( self ):
 
@@ -36,7 +54,7 @@ class Command(BaseCommand):
             
     def _load_dbtable( self ):
         
-        Interaction.objects.filter( srcdb = 'BIOGRID' ).delete()
+        Interaction.objects.filter( srcdb__in = list(src_by_pmids.values())).delete()
         
         with connection.cursor() as c:
             c.execute( 'LOAD DATA LOCAL INFILE %s REPLACE INTO TABLE tcga.interaction FIELDS TERMINATED BY "\t"', [final] )
@@ -49,6 +67,7 @@ class Command(BaseCommand):
         keep   = [0,1,2,7,8,11,12,14,15,16,17,18,23] 
         entrez = Entrez.objects.values( 'eid', 'symbol' )
         edict  = {}
+        #print( len(entrez))
         for dic in entrez:
             edict[dic[ 'eid' ]] = dic[ 'symbol' ]
 
@@ -70,8 +89,11 @@ class Command(BaseCommand):
                         # what are these?
                         if fields[1] == '-' or fields[2] == '-':
                             continue
-                        if fields[7] in skip_pmids:
+                        if fields[14] in src_by_pmids:
+                            #fields[23] = src_by_pmids[ fields[14] ]
                             continue
+
+
                         # ids are incorrect
                         if int(fields[1]) not in edict or int(fields[2]) not in edict :
                             continue
@@ -90,10 +112,16 @@ class Command(BaseCommand):
                         oh.write( "\t".join([fields[0], fields[1], fields[2], fields[3], fields[4], fields[8],
                                              fields[9], fields[5], fields[6], fields[10], fields[11], fields[7], fields[12]]) + "\n")
             
-        os.remove( inp )
+        #os.remove( inp )
 
         
     def handle(self, *args, **options):
-        self._download_from_biogrid()
-        self._parse_update_file()
-        self._load_dbtable()
+        if options[ 'reload' ]:
+            self._load_dbtable()
+        elif options[ 'reparse' ]:
+            self._parse_update_file()
+            self._load_dbtable()
+        else:
+            self._download_from_biogrid()
+            self._parse_update_file()
+            self._load_dbtable()
