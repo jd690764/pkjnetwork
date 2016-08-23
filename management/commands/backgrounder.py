@@ -23,21 +23,26 @@ class Command(BaseCommand):
             if line[0] == '#' : 
                 continue 
 
-            linel       =    line.rstrip().lstrip().split('\t')
+            linel           = line.rstrip().lstrip().split('\t')
             print( 'line=' + str(linel) )
-            #linel       =    line.split('\t')             
-            #rawfilename =    linel[0]
-            infilename  =    linel[0] 
-            baitsym     =    b4us(linel[1]) 
-            org         =    linel[2]
-            special     =    linel[3]
-            parser      =    linel[4] 
-            bgfilename  =    linel[5] 
+
+            infilename      = linel[0] 
+            baitsym         = b4us(linel[1]) 
+            org             = linel[2]
+            special         = linel[3]
+            parser          = linel[4] 
+
+            if len(linel) == 6:
+                bgfilename  = linel[5]
+            else :
+                bgfilename  = ''
+
             print( 'infile=' + infilename )
             print( 'baitsym=' + baitsym )
             print( 'org=' + org )
             print( 'special=' + special )
             print( 'bgfile=' + bgfilename )
+
             if special and special[0] == '*' : 
                 outfname_pfx   =    special[1:]+date6()
             elif special : 
@@ -69,18 +74,19 @@ class Command(BaseCommand):
 
             if org == '9606' : 
                 dataset.syncToEntrez() 
-                if bgfilename : 
+                if bgfilename and bgfilename != '': 
                     dataset.set_background( bgpath + bgfilename ) 
 
             else : 
                 dataset.syncToEntrez( bestpepdb = 'RPMm', debug = True )
-                if bgfilename : 
+                if bgfilename and bgfilename != '': 
                     dataset.set_background( bgpath + bgfilename, bestpepdb = 'RPMm' ) 
 
             dataset.setBait(baitsym) 
             dataset.score() 
             dataset.save(outfname) 
 
+        ms.save_dup()
 
     def handle(self, *args, **options):
         self._process_datasets()
