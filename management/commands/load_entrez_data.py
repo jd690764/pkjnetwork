@@ -50,13 +50,14 @@ class Command(BaseCommand):
         with connection.cursor() as c:
             for org, f in files.items():
                 c.execute( 'LOAD DATA LOCAL INFILE %s REPLACE INTO TABLE tcga.entrez FIELDS TERMINATED BY "\t"' + 
-                           ' (CDD, EID, EXTERNAL, LOCATION, PEPTIDE, PUBMED, SUMMARY, SWISSPROT, SYMBOL, SYNONYM, TAXID, TREMBL, GENETYPE, MRNA)', [ f[3] ] )
+                           ' (CDD, DESCR, EID, EXTERNAL, LOCATION, PEPTIDE, PUBMED, SUMMARY, SWISSPROT, SYMBOL, SYNONYM, TAXID, TREMBL, GENETYPE, MRNA)', [ f[3] ] )
         
             
     def _parse_file( self ):
 
         for org, f in files.items():
 
+            os.remove( f[3] )
             # call the xml parser
             genehasher.xml2bin( f[2], f[3], 'tsv' )
             #os.remove( inp )
@@ -88,6 +89,7 @@ class Command(BaseCommand):
                 newobj                = dict()
                 # these are unique
                 newobj[ 'EID' ]       = str(dbo.eid)
+                newobj[ 'Descr' ]     = dbo.descr
                 newobj[ 'Summary' ]   = dbo.summary
                 newobj[ 'SwissProt' ] = dbo.swissprot
                 newobj[ 'Symbol' ]    = dbo.symbol
@@ -216,8 +218,8 @@ class Command(BaseCommand):
         
             
     def handle(self, *args, **options):
-        #self._download_from_entrez_and_convert()
-        #self._parse_file()
-        #self._load_dbtable()
-        #self._pickler()
+        self._download_from_entrez_and_convert()
+        self._parse_file()
+        self._load_dbtable()
+        self._pickler()
         self._export_domain_file()
