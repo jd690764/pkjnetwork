@@ -9,6 +9,7 @@ import pyexcel.ext.xlsx
 
 from network.models import Entrez, Syns_view, Hgnc, Interaction, Ensembl
 from lib.fileUtils import unzip, downloadFromUrl
+from lib import config as cf
 
 import pprint
 
@@ -90,10 +91,11 @@ class Command(BaseCommand):
                 # find the entrez symbols/eids
                 fields = line.rstrip( '\n' ).split( "\t" )
                 # update ens gene symbols
-                if fields[0] in ensdict:
-                    fields[2] = ensdict[ fields[0] ]
-                if fields[1] in ensdict:
-                    fields[3] = ensdict[ fields[1] ]
+                for i in [ 0, 1 ]:                
+                    if fields[i] in ensdict:
+                        fields[i+2] = ensdict[ fields[i] ]
+                    else :
+                        print( fields[i] + ': not in ensembl' )
 
                 fields = [ fields[i] for i in keep ]
                 if fields[0] == 'ENSG1':
@@ -108,7 +110,7 @@ class Command(BaseCommand):
                     elif fields[i] in synsdict:
                         fields[i] = synsdict[ fields[i] ]
                     else:
-                        print( fields[i] + ' cannot be mapped to entrez.')
+                        print( fields[i] + ': cannot be mapped to entrez.')
                         skip = True
                 if not skip:
                     idstr  = '_' + fields[0] + '_' + fields[1] + '_'
@@ -135,8 +137,8 @@ class Command(BaseCommand):
                     fields  = line.rstrip( ).split( "\t" )
 
                     # the fields are complexid, no of subunits, ensids, symbols
-                    es      = fields[2].split( ';' )
-                    ss      = [''] * len( es )
+                    es      = fields[2].split( ';' ) # current ensembl accessions
+                    ss      = [''] * len( es ) # current ensembl symbols
 
                     # upate the genes in the complex to current entrez symbol
                     # get the ensembl-ids
@@ -145,9 +147,10 @@ class Command(BaseCommand):
                         if e in ensdict:
                             ss[ i ] = ensdict[ e ]
                         else:
-                            print( e + ' is not in ENSEMBL'
-
-                    symbols = [''] * len( es )
+                            print( e + ': is not in ENSEMBL' )
+                                   
+                    symbols = [''] * len( es ) # current entrez symbols
+                                   
                     for i, s in enumerate(ss):
                         #print(s)
                         if s and s in genedict:
@@ -159,11 +162,12 @@ class Command(BaseCommand):
                         elif s and s.upper() in synsdict:
                             symbols[ i ] = synsdict[ s.upper() ]
                             #print( 'syn' )
-
+                        else :
+                            print( s + ': is  not mappable to entrez' )
+                            
                     print( symbols )
-                    if '' in  symbols:
-                        print( fields[0] + '\t' + str(len(es)) + '\t' + str(len(symbols)) )
-                    #print( symbols )
+                    #if '' in  symbols:
+                    #    print( fields[0] + '\t' + str(len(es)) + '\t' + str(len(symbols)) )
                             
                     # do the permutations within the complex for each gene pair
                     # and keep the ones where there is some experimental evidence
@@ -172,34 +176,47 @@ class Command(BaseCommand):
                     # complexes
                     for i in range( 0, len(symbols)-1 ):
                         for j in range( i+1, len(symbols) ):
-                            interid    = 'Cv2_' + fields[0] + '_' + str(i) + '_' + str(j)
+                            interid    = 'Cv2_' + fields[0] + '_' + str(i) + '-' + str(j)
                             symbola    = symbols[i]
                             symbolb    = symbols[j]
-                            #print( symbola + '\t' + symbolb )
-                            entreza    = str(genedict[ symbola.upper() ])
-                            entrezb    = str(genedict[ symbolb.upper() ])
-                            system     = 'co-fractionation'
-                            systemtype = 'physical'
-                            
-                            for r in sup2:
-                                #print( symbola + '\t' + symbolb + str(r) )
-                                if re.match( '.*_'+symbola.upper()+'_.*', r[4] ) and re.match( '.*_'+symbolb.upper()+'_.*', r[4] ):
-                                    #print( 'match' + str(r) )
-                                    score    = str( r[2])
-                                    if r[3] == '':
-                                        # in these cases there is no direct evidence for
-                                        # physical interaction in the human case - there
-                                        # is in other organisms
-                                        system     = 'co-fractionation (predicted)'
+                            if symbola and symbolb:
+                                #print( 'both exist: ' + symbola + '\t' + symbolb )
+                                entreza    = str(genedict.get( symbola.upper(), '' ))
+                                entrezb    = str(genedict.get( symbolb.upper(), ''))
+                                system     = 'co-fractionation'
+                                systemtype = 'physical'
+
+                                for r in sup2:
+                                    #print( symbola + '\t' + symbolb + str(r) )
+                                    if re.match( '.*_'+symbola.upper()+'_.*', r[4] ) and re.match( '.*_'+symbolb.upper()+'_.*', r[4] ):
+                                        #print( 'interaction evidence' + str(r) )
+                                        score    = str( r[2])
+                                        if r[3] == '':
+                                            # in these cases there is no direct evidence for
+                                            # physical interaction in the human case - there
+                                            # is in other organisms
+                                            system     = 'co-fractionation (predicted)'
                                         
-                                    oh.write( "\t".join([interid, entreza, entrezb, symbola, symbolb, organisma, organismb, system, systemtype, throughput, score, pmid, srcdb ]) + "\n")
-                                    break
-                                else:
-                                    if len(es) == len(symbols):
-                                        score  = ''
-                                        system = 'co-fractionation (predicted)'
                                         oh.write( "\t".join([interid, entreza, entrezb, symbola, symbolb, organisma, organismb, system, systemtype, throughput, score, pmid, srcdb ]) + "\n")
+                                        break
+                                else:
+                                    #if len(es) == len(symbols):
+                                    #print( 'no evidence')
+                                    score  = ''
+                                    system = 'co-fractionation (predicted)'
+                                    oh.write( "\t".join([interid, entreza, entrezb, symbola, symbolb, organisma, organismb, system, systemtype, throughput, score, pmid, srcdb ]) + "\n")
+
+    def _export_ifile( self ):
+
+        emili = Interaction.objects.filter( srcdb = 'EMILIv2' ).values( 'interid', 'entreza', 'entrezb', 'symbola', 'symbolb' )
+        with open( cf.emiliomeV2Path, 'wt' ) as outp:
+        #with open( 'tets.txt', 'wt' ) as outp:
+            outp.write( '\t'.join([ 'id', 'ea', 'eb', 'oa', 'ob' ]) + '\n' )
+            for dic in emili:
+                outp.write( '\t'.join( [ str(dic['interid']), str(dic['entreza']), str(dic['entrezb']), dic['symbola'], dic['symbolb']] ) + "\n")                                    
+                                   
     def handle(self, *args, **options):
         #self._download_from_labsite()
         self._parse_translate_file()
         self._load_dbtable()
+        self._export_ifile()

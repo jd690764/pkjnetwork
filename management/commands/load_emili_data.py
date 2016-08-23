@@ -8,6 +8,7 @@ import pyexcel as pe
 
 from network.models import Interaction, Entrez
 from lib.fileUtils import unzip, downloadFromUrl
+from lib import config as cf
 
 import pprint
 
@@ -19,6 +20,10 @@ files  = { 'http://human.med.utoronto.ca/download/TableS3.xls' : [ path+'emiliom
 corr   = { 'P62861' : 'P35544',
            'Q5SNT6' : 'Q641Q2',
            'Q96PK2' : 'Q9UPN3',
+}
+obs    = {
+           # and some of the spids are obsolete - I ignore these
+           'Q5VYJ4' : 'SNRPE'
 }
 
 class Command(BaseCommand):
@@ -70,13 +75,13 @@ class Command(BaseCommand):
                         if not re.search( '^C_', line ):
                             continue
 
-                        line   = line.rstrip( '\n')
+                        line   = line.rstrip( )
                         fields = line.split( "\t" )
                         spids  = fields[2].split( ',' )
 
                         for i in range( 0, len(spids)-1 ):
                             for j in range( i+1, len(spids) ):
-                                index = fields[0] + '_' + str(i) + '_' + str(j)
+                                index = fields[0] + '_' + str(i) + '-' + str(j)
 
                                 # correct a few mismapped spids
                                 if spids[i] in corr:
@@ -90,11 +95,20 @@ class Command(BaseCommand):
                                                          row[6], 'Co-purification', 'physical', '', '', '22939629', 'EMILI' ]) + "\n")
                                 else:
                                     # these rejects are obsolete ids
-                                    print( index, "\t", spids[i], "\t", spids[j] )
+                                    print( 'obsolete: ',  index, "\t", spids[i], "\t", spids[j] )
         #os.remove( inp )
 
+    def _export_ifile( self ):
+
+        emili = Interaction.objects.filter( srcdb = 'EMILI' ).values( 'interid', 'entreza', 'entrezb', 'symbola', 'symbolb' )
+        with open( cf.emiliomePath, 'wt' ) as outp:
+        #with open( 'tets.txt', 'wt' ) as outp:
+            outp.write( '\t'.join([ 'id', 'ea', 'eb', 'oa', 'ob' ]) + '\n' )
+            for dic in emili:
+                outp.write( '\t'.join( [ str(dic['interid']), str(dic['entreza']), str(dic['entrezb']), dic['symbola'], dic['symbolb']] ) + "\n")
         
     def handle(self, *args, **options):
         #self._download_from_labsite()
         self._parse_translate_file()
         self._load_dbtable()
+        self._export_ifile() 
