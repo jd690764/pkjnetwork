@@ -82,7 +82,7 @@ class Command(BaseCommand):
                 if bgfilename and bgfilename != '': 
                     dataset.set_background( bgpath + bgfilename, bestpepdb = 'RPMm' ) 
 
-            dataset.setBait(baitsym) 
+            dataset.setBait(baitsym)
             dataset.score() 
             dataset.save(outfname) 
 
