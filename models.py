@@ -83,6 +83,24 @@ class Cnv(models.Model):
         db_table = 'cnv'
 
 
+class Dbsnp(models.Model):
+    rsno = models.CharField(primary_key=True, max_length=20)
+    taxid = models.IntegerField()
+    rstype = models.CharField(max_length=10, blank=True, null=True)
+    alleles = models.CharField(max_length=20, blank=True, null=True)
+    valid = models.IntegerField(blank=True, null=True)
+    assembly = models.CharField(max_length=50, blank=True, null=True)
+    chrom = models.CharField(max_length=10, blank=True, null=True)
+    chrpos = models.IntegerField(blank=True, null=True)
+    symbol = models.CharField(max_length=20, blank=True, null=True)
+    eid = models.IntegerField(blank=True, null=True)
+    vartype = models.CharField(max_length=50, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'dbsnp'
+        
+
 class Dels(models.Model):
     cnvid = models.IntegerField()
     cancer_id = models.IntegerField()
@@ -156,6 +174,7 @@ class Enshom(models.Model):
 class Entrez(models.Model):
     eid = models.IntegerField(db_column='EID', primary_key=True)  # Field name made lowercase.
     cdd = models.CharField(db_column='CDD', max_length=200, blank=True, null=True)  # Field name made lowercase.
+    descr = models.CharField(db_column='DESCR', max_length=100, blank=True, null=True)  # Field name made lowercase.    
     external = models.CharField(db_column='EXTERNAL', max_length=200, blank=True, null=True)  # Field name made lowercase.
     location = models.CharField(db_column='LOCATION', max_length=50, blank=True, null=True)  # Field name made lowercase.
     peptide = models.CharField(db_column='PEPTIDE', max_length=45000, blank=True, null=True)  # Field name made lowercase.
