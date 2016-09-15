@@ -3,6 +3,7 @@ from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.views import generic
 
+import time
 import sys
 from numpy import log, exp
 from lib import interactors as I
@@ -24,15 +25,15 @@ def createNetwork( request ):
     files     = listdir('data/nwfiles/')
     yamlfiles = dict()
     for f in files:
-        if re.search( '.*yaml$', f ):
+        if re.search( '^[^\.].*yaml$', f ):
             yamlfiles[f] = f
-
+            
     for k in yamlfiles:
         print( k + ' ' + yamlfiles[k] )
-    return render( request, 'network/createNetwork.html',  { 'yamlfiles' : yamlfiles } )
+    return render( request, 'network/createNetwork.html',  { 'yamlfiles' : sorted(yamlfiles.keys()) } )
 
 def display( request ):
-
+    t0 = time.time()
     fname = request.POST['yaml']
     print( 'fname=' + fname )
     nm.createNetwork( 'data/nwfiles/' + fname )
@@ -45,6 +46,8 @@ def display( request ):
             counter = counter + 1
             if counter > 11:
                 break
-    
+
+    t1 = time.time()
+    print( 'time it took: ' + str(t1 - t0))
     return render( request, 'network/display.html', { 'choices' : choices } )
 
