@@ -6,13 +6,15 @@ from network.models import Entrez
 import lib.interactors as I
 import lib.MSpreprocess as ms
 from lib.markutils import *
+from lib import config as cf
 
+mrmspath      = cf.mrmsfilesPath
+rawpath       = cf.rawfilesPath
+ipath         = cf.ifilesPath
+bgpath        = cf.bgerfilePath
+instruction_f = open( cf.bgerfilePath )
 
-mrmspath = '/srv/msrepo/mrmsfiles/'
-rawpath  = '/srv/msrepo/rawfiles/'
-ipath    = '/srv/msrepo/ifiles/' #'data/preprocess/' #
-bgpath   = '/srv/msrepo/background/'
-instruction_f = open( 'data/preprocess/backgrounder.tsv' )
+pepDict       = { '9606': 'RPHs', '10090': 'RPMm' }
 
 class Command(BaseCommand):
     args = '<foo bar ...>'
@@ -72,21 +74,14 @@ class Command(BaseCommand):
             else : 
                 raise TypeError 
 
-            if org == '9606' : 
-                dataset.syncToEntrez() 
-                if bgfilename and bgfilename != '': 
-                    dataset.set_background( bgpath + bgfilename ) 
-
-            else : 
-                dataset.syncToEntrez( bestpepdb = 'RPMm', debug = True )
-                if bgfilename and bgfilename != '': 
-                    dataset.set_background( bgpath + bgfilename, bestpepdb = 'RPMm' ) 
+            dataset.syncToEntrez( bestpepdb = pepDict[ org ], debug = True )
+            if bgfilename and bgfilename != '': 
+                dataset.set_background( bgpath + bgfilename, bestpepdb = pepDict[ org ] ) 
 
             dataset.setBait(baitsym)
             dataset.score() 
             dataset.save(outfname) 
 
-        ms.save_dup()
 
     def handle(self, *args, **options):
         self._process_datasets()
