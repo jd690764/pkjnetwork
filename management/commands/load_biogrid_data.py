@@ -1,5 +1,6 @@
 import os
 import re
+import datetime
 
 from django.db import connection
 from django.core.management.base import BaseCommand
@@ -117,6 +118,7 @@ class Command(BaseCommand):
 
         
     def handle(self, *args, **options):
+        print( '\n\n\n\n############################ ' + 'update Biogrid data on ' + str(datetime.date.today()))
         if options[ 'reload' ]:
             self._load_dbtable()
         elif options[ 'reparse' ]:

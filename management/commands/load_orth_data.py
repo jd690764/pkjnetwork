@@ -1,3 +1,4 @@
+import datetime
 from django.core.management.base import BaseCommand
 from django.db import connection
 import subprocess
@@ -67,9 +68,9 @@ class Command(BaseCommand):
 
         downloadFromUrl( files[0], files[1] )
         # download h2m data from biomart
-        subprocess.call(['wget', '-O', files[4], 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Query><Query  virtualSchemaName = "default" formatter = "TSV" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" ><Dataset name = "hsapiens_gene_ensembl" interface = "default" ><Filter name = "with_homolog_mmus" excluded = "0"/><Attribute name = "ensembl_gene_id" /><Attribute name = "mmusculus_homolog_ensembl_gene" /><Attribute name = "mmusculus_homolog_associated_gene_name" /><Attribute name = "mmusculus_homolog_orthology_type" /><Attribute name = "mmusculus_homolog_orthology_confidence" /></Dataset></Query>'])
+        subprocess.call(['wget', '-O', files[4], 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Query><Query virtualSchemaName = "default" formatter = "TSV" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" > <Dataset name = "hsapiens_gene_ensembl" interface = "default" > <Filter name = "with_mmusculus_homolog" excluded = "0"/> <Attribute name = "ensembl_gene_id" /> <Attribute name = "mmusculus_homolog_ensembl_gene" /> <Attribute name = "mmusculus_homolog_associated_gene_name" /> <Attribute name = "mmusculus_homolog_orthology_type" /> <Attribute name = "mmusculus_homolog_orthology_confidence" /> </Dataset></Query>'])
         # download m2h data from biomart
-        subprocess.call(['wget', '-O', files[5], 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Query><Query virtualSchemaName = "default" formatter = "TSV" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" > <Dataset name = "mmusculus_gene_ensembl" interface = "default" > <Filter name = "with_homolog_hsap" excluded = "0"/> <Attribute name = "ensembl_gene_id" /> <Attribute name = "hsapiens_homolog_ensembl_gene" /> <Attribute name = "hsapiens_homolog_associated_gene_name" /> <Attribute name = "hsapiens_homolog_orthology_type" /> <Attribute name = "hsapiens_homolog_orthology_confidence" /> </Dataset></Query>'])
+        subprocess.call(['wget', '-O', files[5], 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Query><Query virtualSchemaName = "default" formatter = "TSV" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" > <Dataset name = "mmusculus_gene_ensembl" interface = "default" > <Filter name = "with_hsapiens_homolog" excluded = "0"/> <Attribute name = "ensembl_gene_id" /> <Attribute name = "hsapiens_homolog_ensembl_gene" /> <Attribute name = "hsapiens_homolog_associated_gene_name" /> <Attribute name = "hsapiens_homolog_orthology_type" /> <Attribute name = "hsapiens_homolog_orthology_confidence" /> </Dataset></Query>'])
 
     def _load_dbtable( self ):
 
@@ -139,6 +140,7 @@ class Command(BaseCommand):
 
             
     def handle(self, *args, **options):
+        print( '\n\n\n\n############################ ' + 'update Orthology data on ' + str(datetime.date.today()))
         self._download_homology_data()
         self._parse_ens_file( files[4], files[6], 9606, 10090 )
         self._parse_ens_file( files[5], files[7], 10090, 9606 )

@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 from lib.fileUtils import downloadFromUrl, gunzip
+import datetime
 from network.models import Refseq
 from django.db import connection
 import subprocess
@@ -75,6 +76,7 @@ class Command(BaseCommand):
 
                     
     def handle(self, *args, **options):
+        print( '\n\n\n\n############################ ' + 'update Refseq data on ' + str(datetime.date.today()))
         self._download_from_ncbi()
         self._parse_file( )
         self._load_dbtable()

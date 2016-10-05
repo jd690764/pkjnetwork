@@ -1,16 +1,23 @@
+import re
+
 from django.core.management.base import BaseCommand
-from lib.fileUtils import downloadFromUrl, gunzip
+from lib.fileUtils import downloadFromUrl, gunzip, findURL
+import datetime
 from network.models import Ensembl
 from django.db import connection
-import re
+
 
 path  = 'data/gene/'
 
-files = { 'hs' : [ 'ftp://ftp.ensembl.org/pub/current_gff3/homo_sapiens/Homo_sapiens.GRCh38.84.gff3.gz',
+files = { 'hs' : [ 'ftp.ensembl.org',
+                   'pub/current_gff3/homo_sapiens/',
+                   'Homo_sapiens\.GRCh\d+\.\d+\.gff3\.gz',
                    path+'hs.gff3.gz',
                    path+'hs.gff3',
                    path+'hs.gff3.tsv' ],
-          'mm' : [ 'ftp://ftp.ensembl.org/pub/current_gff3/mus_musculus/Mus_musculus.GRCm38.84.gff3.gz',
+          'mm' : [ 'ftp.ensembl.org',
+                   'pub/current_gff3/mus_musculus/',
+                   'Mus_musculus\.GRCm\d+\.\d+\.gff3\.gz',
                    path+'mm.gff3.gz',
                    path+'mm.gff3',
                    path+'mm.gff3.tsv' ]
@@ -27,19 +34,23 @@ class Command(BaseCommand):
 
     def _download_from_ensembl( self ):
 
+        
         for org, f in files.items():
-            downloadFromUrl( f[0], f[1] )
-            gunzip( f[1], path, f[2] )
+            dlfile = findURL( f[0], f[1], f[2] )
+            if dlfile:
+                print( dlfile )
+                downloadFromUrl( dlfile, f[3] )
+                gunzip( f[3], path, f[4] )
             
 
     def _parse_file( self ):
 
         for org, f in files.items():
-            with open( f[3], 'wt' ) as outh:
-                with open( f[2] ) as fh:
+            with open( f[5], 'wt' ) as outh:
+                with open( f[4] ) as fh:
                     for line in fh:
-                        if not re.match( '.*(\texon\t|\tCDS\t|\tchromosome\t|^#|_UTR\t|\tsupercontig\t).*', line ):
-                            #print( line )
+                        if not re.match( '.*(\texon\t|\tbiological_region\t|\tCDS\t|\tchromosome\t|^#|_UTR\t|\tsupercontig\t).*', line ):
+                            #print( 'line=' + line )
                             line    = line.rstrip( "\n" ).split( '\t' )
                             fields  = { k: v for k, v in [kv.split( '=' ) for kv in line[8].split( ';' )]}
                             gene_id = ''
@@ -68,10 +79,11 @@ class Command(BaseCommand):
         Ensembl.objects.all().delete()
         for org, f in files.items():
             with connection.cursor() as c:
-                c.execute( "LOAD DATA LOCAL INFILE %s REPLACE INTO TABLE tcga.ensembl FIELDS TERMINATED BY '\t' OPTIONALLY ENCLOSED BY '\"'", [ f[3] ] )
+                c.execute( "LOAD DATA LOCAL INFILE %s REPLACE INTO TABLE tcga.ensembl FIELDS TERMINATED BY '\t' OPTIONALLY ENCLOSED BY '\"'", [ f[5] ] )
 
         
     def handle(self, *args, **options):
+        print( '\n\n\n\n############################ ' + 'update Ensembl data on ' + str(datetime.date.today()))
         self._download_from_ensembl()
         self._parse_file()
         self._load_dbtable()

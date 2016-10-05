@@ -1,3 +1,4 @@
+import datetime
 from django.core.management.base import BaseCommand
 from lib import genehasher
 from lib.fileUtils import downloadFromUrl, gunzip
@@ -74,6 +75,7 @@ class Command(BaseCommand):
 
             
     def handle(self, *args, **options):
+        print( '\n\n\n\n############################ ' + 'update CDD data on ' + str(datetime.date.today()))
         self._download_from_ncbi_cdd()
         self._parse_file()
         self._load_dbtable()

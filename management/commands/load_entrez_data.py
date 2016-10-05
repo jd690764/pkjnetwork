@@ -3,6 +3,7 @@ from lib import genehasher
 from lib.fileUtils import downloadFromUrl
 import subprocess
 import os
+import datetime
 from network.models import Entrez
 from django.db import connection
 
@@ -218,6 +219,7 @@ class Command(BaseCommand):
         
             
     def handle(self, *args, **options):
+        print( '\n\n\n\n############################ ' + 'update Entrez data on ' + str(datetime.date.today()))
         self._download_from_entrez_and_convert()
         self._parse_file()
         self._load_dbtable()

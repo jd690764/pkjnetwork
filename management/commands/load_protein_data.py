@@ -1,4 +1,5 @@
 import os
+import datetime
 
 from django.core.management.base import BaseCommand
 from django.db import connection
@@ -115,6 +116,7 @@ class Command(BaseCommand):
             
         
     def handle(self, *args, **options):
+        print( '\n\n\n\n############################ ' + 'update NCBI protein data on ' + str(datetime.date.today()))
         self._download_from_ncbi()
         self._parse_file()
         self._load_dbtable()
