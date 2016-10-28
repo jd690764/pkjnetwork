@@ -11,7 +11,7 @@ from lib import config as cf
 mrmspath      = cf.mrmsfilesPath
 rawpath       = cf.rawfilesPath
 ipath         = cf.ifilesPath
-bgpath        = cf.bgerfilePath
+bgpath        = cf.bgfilesPath
 instruction_f = open( cf.bgerfilePath )
 
 pepDict       = { '9606': 'RPHs', '10090': 'RPMm' }

@@ -137,7 +137,9 @@ class Command(BaseCommand):
                     d[ heid ]  = { meid }
 
         pickle.dump( d, open( f, 'wb' ))
-
+        with open( path+f+'.tsv', 'wt' ) as fh:
+            for eid1 in d:
+                fh.write( eid1 + '\t' + str(','.join(d[eid1])) + '\n' ) 
             
     def handle(self, *args, **options):
         print( '\n\n\n\n############################ ' + 'update Orthology data on ' + str(datetime.date.today()))
