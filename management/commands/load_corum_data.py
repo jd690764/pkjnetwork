@@ -119,12 +119,12 @@ class Command(BaseCommand):
                             
                     for i in range( 0, len(eids)-1 ):
                         for j in range( i+1, len(eids) ):
-                            if fields[1].lower() in interids:
-                                interids[ fields[1].lower() ] = interids[ fields[1].lower() ] + 1
+                            if fields[1] in interids:
+                                interids[ fields[1]] = interids[ fields[1]] + 1
                             else:
-                                interids[ fields[1].lower() ] = 1
+                                interids[ fields[1]] = 1
                                 
-                            index = fields[1] + '_' + str(i) + '-' + str(j) + '.' + str(fields[3]) + '.' + str( interids[ fields[1].lower() ] )
+                            index = fields[1] + '_' + str(i) + '-' + str(j) + '.' + str(fields[1]) + '.' + str( interids[ fields[1]] )
 
                             if eids[i] in entrez and eids[j] in entrez:
                                 print( 'all: ' + str(len(eids)) + '   i: ' + str(i) + '   j: ' + str(j) + '   good' )
