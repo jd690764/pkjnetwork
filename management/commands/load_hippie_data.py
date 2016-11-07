@@ -101,12 +101,12 @@ class Command(BaseCommand):
     def _export_ifile( self ):
 
         with open(ifile, 'wt') as oh:
-            oh.write( '\t'.join([ 'interid', 'entreza', 'entrezb', 'symbola', 'symbolb', 'organism', 'score' ]) + '\n' )
+            oh.write( '\t'.join([ 'interID', 'entrezA', 'entrezB', 'biogridA', 'biogridB', 'systematicA', 'systematicB', 'officialA', 'officialB', 'synonymsA', 'synonymsB', "system" , "systemType" , "Author" , "pmid" , 'organismA', 'organismB', "throughput" , "score" , "modification" , "phenotypes", "qualifications" , "tags" , "srcDB" ]) + '\n' )
             with connection.cursor() as c:
             # very long query, be patient ... (6-7 minutes)
                 c.execute( 'select interid, entreza, entrezb, symbola, symbolb, organisma, score from interaction where srcdb = "HIPPIE"' )
                 for row in c.fetchall():
-                    oh.write('\t'.join( [row[0], str(row[1]), str(row[2]), row[3], row[4], str(row[5]), str(row[6])] ) + '\n')
+                    oh.write('\t'.join( [row[0], str(row[1]), str(row[2]), '', '', '', '', row[3], row[4], '', '', '', '', '', '', str(row[5]), str(row[5]), '', str(row[6]), '', '',  '', '', 'HIPPIE' ]) + '\n')
 
         
     def handle(self, *args, **options):

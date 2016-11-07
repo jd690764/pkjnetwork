@@ -12,14 +12,17 @@ from lib import config as cf
 
 import pprint
 
-path   = 'data/interactions/'
-final  = path+'complexes_latest'
-ifile  = cf.complexPath
-files  = [ path + 'complexes_local.txt' ]
+path       = 'data/interactions/'
+final      = path+'complexes_latest'
+ifile      = cf.complexPath
+byGeneFile = cf.complexByGeneFile
+files      = [ path + 'complexes_local.txt' ]
 
-pp     = pprint.PrettyPrinter( indent = 4 )
+pp         = pprint.PrettyPrinter( indent = 4 )
 
-sqli   = """select 
+# query for ifile
+sqli       = """
+select 
         concat(replace(interid, concat('.', substring_index(interid, '.', -2)), ''), '_', substring_index(interid, '_', -1)) interid, 
         entreza, 
         entrezb, 
@@ -32,8 +35,29 @@ where srcdb = 'COMPLEXES'
 group by 1
 order by 6, 1"""
 
-sqlq   = """select complex, subunits, source, \"m\" as \"unique\" from ( 
-        
+# query for by_gene_file
+sqlby      = """
+select 
+    symbola, 
+    group_concat(distinct complex order by complex SEPARATOR '|') complex, 
+    group_concat(distinct ids SEPARATOR '|') ids, taxid 
+from (
+    select symbola, substring_index(interid, '.', 1) complex, substring_index(replace(interid, concat('_',substring_index(interid, '_', -1)), ''), '.', -2) ids, substring_index(replace(interid, concat('_',substring_index(interid, '_', -1)), ''), '.', -1) taxid
+    from interaction
+    where srcdb = 'COMPLEXES'
+
+    union
+
+    select symbolb, substring_index(interid, '.', 1) complex, substring_index(replace(interid, concat('_',substring_index(interid, '_', -1)), ''), '.', -2) ids, substring_index(replace(interid, concat('_',substring_index(interid, '_', -1)), ''), '.', -1) taxid
+    from interaction
+    where srcdb = 'COMPLEXES'
+) x
+group by symbola, taxid
+"""
+
+# select interactions to create complexes
+sqlq       = """
+select complex, subunits, source, \"m\" as \"unique\" from (         
         select complex, group_concat(symbola order by symbola) subunits, \"gocomp\" source from
         ( 
                 select substring_index(interid, '_', 1) complex, symbola, organisma 
@@ -408,25 +432,36 @@ class Command(BaseCommand):
     def _export_ifile( self ):
 
         with open(ifile, 'wt') as oh:
-            oh.write( '\t'.join([ 'interid', 'entreza', 'entrezb', 'symbola', 'symbolb', 'organism', 'ids' ]) + '\n' )
+            oh.write( '\t'.join([ 'interID', 'entrezA', 'entrezB', 'biogridA', 'biogridB', 'systematicA', 'systematicB', 'officialA', 'officialB', 'synonymsA', 'synonymsB', "system" , "systemType" , "Author" , "pmid" , 'organismA', 'organismB', "throughput" , "score" , "modification" , "phenotypes", "qualifications" , "tags" , "srcDB" ]) + '\n' )
             with connection.cursor() as c:
-            # very long query, be patient ... (6-7 minutes)
                 c.execute( sqli )
                 for row in c.fetchall():
-                    oh.write('\t'.join( [row[0], str(row[1]), str(row[2]), row[3], row[4], str(row[5]), row[6]] ) + '\n')
+                    oh.write('\t'.join( [row[0], str(row[1]), str(row[2]), '', '', '', '', row[3], row[4], '', '', '', '', '', '', str(row[5]), str(row[5]), '', '', '', '', '', '', row[6]] ) + '\n')
 
-        
+
+    def _export_byGeneFile( self ):
+        with open(byGeneFile, 'wt') as oh:
+            oh.write( '\t'.join([ 'symbol', 'complex', 'ids', 'taxid' ]) + '\n' )
+            with connection.cursor() as c:
+                c.execute( sqlby )
+                for row in c.fetchall():
+                    oh.write('\t'.join( [row[0], row[1], row[2], str(row[3])] ) + '\n')
+
+                    
     def handle(self, *args, **options):
         if options[ 'reload' ]:
             print('reload')
             self._load_dbtable()
             self._export_ifile()
+            self._export_byGeneFile()            
         elif options[ 'reparse' ]:
             self._parse_translate_file()
             self._load_dbtable()
             self._export_ifile()
+            self._export_byGeneFile()            
         else:
             print('redo')
             self._parse_translate_file()
             self._load_dbtable()
-            self._export_ifile() 
+            self._export_ifile()
+            self._export_byGeneFile()
