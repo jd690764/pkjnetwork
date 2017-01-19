@@ -7,6 +7,7 @@ import lib.interactors as I
 import lib.MSpreprocess as ms
 from lib.markutils import *
 from lib import config as cf
+import pandas as pd
 
 mrmspath      = cf.mrmsfilesPath
 rawpath       = cf.rawfilesPath
@@ -34,17 +35,16 @@ class Command(BaseCommand):
             special         = linel[3]
             parser          = linel[4] 
 
-            if len(linel) == 6:
+            if len(linel) >= 6:
                 bgfilename  = linel[5]
             else :
                 bgfilename  = ''
 
-            print( 'infile=' + infilename )
-            print( 'baitsym=' + baitsym )
-            print( 'org=' + org )
-            print( 'special=' + special )
-            print( 'bgfile=' + bgfilename )
-
+            if len(linel) == 7:
+                mrmsfile    = linel[6]
+            else :
+                mrmsfile    = ''
+                
             if special and special[0] == '*' : 
                 outfname_pfx   =    special[1:]+date6()
             elif special : 
@@ -59,16 +59,35 @@ class Command(BaseCommand):
             if 'mrms' in infilename : 
                 infile = open( mrmspath + infilename ) 
             elif 'xml' in infilename : 
-                infile = open( rawpath + infilename, 'rb' ) 
+                infile = open( rawpath + infilename, 'rb' )
+            elif '.xlsx' in infilename and parser == 'SUMS':
+                mrmsfile = mrmsfile if mrmsfile else re.sub( '^(.+)\.xlsx', '\1', infilename ) + '.mrms'
+                exptdata = pd.read_excel( rawpath + infilename, sheetname = "GLOBAL" )
+                exptdata.to_csv( mrmspath + mrmsfile, sep = "\t", na_rep = 'NaN', index = False )
+                infile = open( mrmspath + mrmsfile )
+            elif '.xlsx' in infilename and parser == 'LaneExcel':
+                mrmsfile = mrmsfile if mrmsfile else re.sub( '^(.+)\.xlsx', '\1', infilename ) + '.mrms'
+                exptdata = pd.read_excel( rawpath + infilename, sheetname = "PeptideCountHeatMap" )
+                exptdata.to_csv( mrmspath + mrmsfile, sep = "\t", na_rep = 'NaN', index = False )
+                infile = open( mrmspath + mrmsfile )                
             else : 
                 raise TypeError  
 
+            print( 'infile=' + infilename )
+            print( 'baitsym=' + baitsym )
+            print( 'org=' + org )
+            print( 'special=' + special )
+            print( 'bgfile=' + bgfilename )
+            print( 'mrmsfile=' + mrmsfile )
+            
             dataset = ms.MSdata( outfname_pfx )
 
             if parser == 'SUMS' :
                 dataset.parseSUMS(infile) 
             elif parser == 'Lane' :
-                dataset.parseLane(infile) 
+                dataset.parseLane(infile)
+            elif parser == 'LaneExcel':
+                dataset.parseLaneExcel(infile)
             elif parser == 'XML'  :
                 dataset.parseXML(infile) 
             else : 
