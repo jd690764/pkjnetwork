@@ -12,7 +12,17 @@ import pprint
 
 path          = 'data/interactions/'
 final         = path+'go_complex_latest'
-files         = [ 'http://geneontology.org/gene-associations/goa_human.gaf.gz', 'http://geneontology.org/gene-associations/gene_association.mgi.gz', path+'gaf.gz', path+'go_complex.csv', 'http://golr.geneontology.org/select?defType=edismax&qt=standard&indent=on&wt=csv&rows=100000&start=0&fl=annotation_class,annotation_class_label&facet=true&facet.mincount=1&facet.sort=count&json.nl=arrarr&facet.limit=25&hl=true&hl.simple.pre=%3Cem%20class=%22hilite%22%3E&csv.encapsulator=&csv.separator=%09&csv.header=false&csv.mv.separator=%7C&fq=document_category:%22ontology_class%22&fq=idspace:%22GO%22&fq=is_obsolete:%22false%22&fq=source:%22cellular_component%22&facet.field=source&facet.field=idspace&facet.field=subset&facet.field=is_obsolete&q=*complex&qf=annotation_class%5E3&qf=annotation_class_label_searchable%5E5.5&qf=description_searchable%5E1&qf=synonym_searchable%5E1&qf=alternate_id%5E1', path+'go_complex_terms' ]
+files         = [ 'http://geneontology.org/gene-associations/goa_human.gaf.gz',
+                  'http://geneontology.org/gene-associations/gene_association.mgi.gz',
+                  path+'gaf.gz',
+                  path+'go_complex.csv',
+                  'http://golr.geneontology.org/select?defType=edismax&qt=standard&indent=on&wt=csv&rows=100000&start=0&fl=annotation_class,annotation_class_label&facet=true&facet.mincount=1&facet.sort=count&json.nl=arrarr&facet.limit=25&hl=true&hl.simple.pre=%3Cem%20class=%22hilite%22%3E&csv.encapsulator=&csv.separator=%09&csv.header=false&csv.mv.separator=%7C&fq=document_category:%22ontology_class%22&fq=idspace:%22GO%22&fq=is_obsolete:%22false%22&fq=source:%22cellular_component%22&facet.field=source&facet.field=idspace&facet.field=subset&facet.field=is_obsolete&q=*complex&qf=annotation_class%5E3&qf=annotation_class_label_searchable%5E5.5&qf=description_searchable%5E1&qf=synonym_searchable%5E1&qf=alternate_id%5E1',
+                  'http://golr.geneontology.org/select?defType=edismax&qt=standard&indent=on&wt=csv&rows=100000&start=0&fl=annotation_class,annotation_class_label&facet=true&facet.mincount=1&facet.sort=count&json.nl=arrarr&facet.limit=25&hl=true&hl.simple.pre=%3Cem%20class=%22hilite%22%3E&csv.encapsulator=&csv.separator=%09&csv.header=false&csv.mv.separator=%7C&fq=document_category:%22ontology_class%22&fq=idspace:%22GO%22&fq=is_obsolete:%22false%22&fq=source:%22cellular_component%22&facet.field=source&facet.field=idspace&facet.field=subset&facet.field=is_obsolete&q=particle*&qf=annotation_class%5E3&qf=annotation_class_label_searchable%5E5.5&qf=description_searchable%5E1&qf=synonym_searchable%5E1&qf=alternate_id%5E1',
+                  'http://golr.geneontology.org/select?defType=edismax&qt=standard&indent=on&wt=csv&rows=100000&start=0&fl=annotation_class,annotation_class_label&facet=true&facet.mincount=1&facet.sort=count&json.nl=arrarr&facet.limit=25&hl=true&hl.simple.pre=%3Cem%20class=%22hilite%22%3E&csv.encapsulator=&csv.separator=%09&csv.header=false&csv.mv.separator=%7C&fq=document_category:%22ontology_class%22&fq=idspace:%22GO%22&fq=is_obsolete:%22false%22&fq=source:%22cellular_component%22&facet.field=source&facet.field=idspace&facet.field=subset&facet.field=is_obsolete&q=centrosome*&qf=annotation_class%5E3&qf=annotation_class_label_searchable%5E5.5&qf=description_searchable%5E1&qf=synonym_searchable%5E1&qf=alternate_id%5E1',
+                  'http://golr.geneontology.org/select?defType=edismax&qt=standard&indent=on&wt=csv&rows=100000&start=0&fl=annotation_class,annotation_class_label&facet=true&facet.mincount=1&facet.sort=count&json.nl=arrarr&facet.limit=25&hl=true&hl.simple.pre=%3Cem%20class=%22hilite%22%3E&csv.encapsulator=&csv.separator=%09&csv.header=false&csv.mv.separator=%7C&fq=document_category:%22ontology_class%22&fq=idspace:%22GO%22&fq=is_obsolete:%22false%22&fq=source:%22cellular_component%22&facet.field=source&facet.field=idspace&facet.field=subset&facet.field=is_obsolete&q=centriole*&qf=annotation_class%5E3&qf=annotation_class_label_searchable%5E5.5&qf=description_searchable%5E1&qf=synonym_searchable%5E1&qf=alternate_id%5E1',
+                  'http://golr.geneontology.org/select?defType=edismax&qt=standard&indent=on&wt=csv&rows=100000&start=0&fl=annotation_class,annotation_class_label&facet=true&facet.mincount=1&facet.sort=count&json.nl=arrarr&facet.limit=25&hl=true&hl.simple.pre=%3Cem%20class=%22hilite%22%3E&csv.encapsulator=&csv.separator=%09&csv.header=false&csv.mv.separator=%7C&fq=document_category:%22ontology_class%22&fq=idspace:%22GO%22&fq=is_obsolete:%22false%22&fq=source:%22cellular_component%22&facet.field=source&facet.field=idspace&facet.field=subset&facet.field=is_obsolete&q=cilium*&qf=annotation_class%5E3&qf=annotation_class_label_searchable%5E5.5&qf=description_searchable%5E1&qf=synonym_searchable%5E1&qf=alternate_id%5E1',
+                  'http://golr.geneontology.org/select?defType=edismax&qt=standard&indent=on&wt=csv&rows=100000&start=0&fl=annotation_class,annotation_class_label&facet=true&facet.mincount=1&facet.sort=count&json.nl=arrarr&facet.limit=25&hl=true&hl.simple.pre=%3Cem%20class=%22hilite%22%3E&csv.encapsulator=&csv.separator=%09&csv.header=false&csv.mv.separator=%7C&fq=document_category:%22ontology_class%22&fq=idspace:%22GO%22&fq=is_obsolete:%22false%22&fq=source:%22cellular_component%22&facet.field=source&facet.field=idspace&facet.field=subset&facet.field=is_obsolete&q=*some&qf=annotation_class%5E3&qf=annotation_class_label_searchable%5E5.5&qf=description_searchable%5E1&qf=synonym_searchable%5E1&qf=alternate_id%5E1',
+                  path+'go_complex_terms' ]
 
 exclude_codes = [ 'IEA' ]
 pp            = pprint.PrettyPrinter( indent = 4 )
@@ -44,7 +54,12 @@ class Command(BaseCommand):
         gunzip( files[2], path, files[3] )
         downloadFromUrl( files[1], files[2] )
         gunzip( files[2], path, files[3], True )
-        downloadFromUrl( files[4], files[5] ) # get go complex terms
+        downloadFromUrl( files[4], files[10] ) # get go complex terms
+        downloadFromUrl( files[5], files[10], append = True ) # get go 'particle' terms
+        downloadFromUrl( files[6], files[10], append = True ) # get go 'centrosome' terms
+        downloadFromUrl( files[7], files[10], append = True ) # get go 'centriole' terms
+        downloadFromUrl( files[8], files[10], append = True ) # get go 'cilia' terms
+        downloadFromUrl( files[8], files[10], append = True ) # get go '*some' terms
 
     def _assign( self, ckey, eid, symb, taxid, ref, eco):
         if symb not in complexes[ ckey ]:
@@ -79,13 +94,14 @@ class Command(BaseCommand):
         inp       = files[3]
         outp      = final
         go_terms  = dict()
-
-        with open( files[5], 'rt' ) as fhh:
+        seen      = dict()
+        
+        with open( files[10], 'rt' ) as fhh:
             for line in fhh:
                 line      = line.rstrip( )
                 fields    = line.split( "\t" )
                 go_terms[ fields[0]] = fields[1]
-        
+
         with open( inp, 'rt' ) as fh:
             for line in fh:
                 if re.search( r'^!.*', line ): #skip comment lines
@@ -97,7 +113,7 @@ class Command(BaseCommand):
                 if fields[4] not in go_terms:
                     continue
 
-                if not re.search( '.*complex$', go_terms[fields[4]]) or go_terms[fields[4]] == 'protein complex':
+                if not re.search('.*(bbsome|complex|particle|centrosome|centriole|cilium).*', go_terms[fields[4]], re.IGNORECASE) or go_terms[fields[4]] == 'protein complex':
                     continue
                 
                 if fields[3] != '': # skip qualified terms
