@@ -65,7 +65,7 @@ class Command(BaseCommand):
                 exptdata = pd.read_excel( rawpath + infilename, sheetname = "GLOBAL" )
                 exptdata.to_csv( mrmspath + mrmsfile, sep = "\t", na_rep = 'NaN', index = False )
                 infile = open( mrmspath + mrmsfile )
-            elif '.xlsx' in infilename and parser == 'LaneExcel':
+            elif '.xls' in infilename and parser == 'LaneExcel':
                 mrmsfile = mrmsfile if mrmsfile else re.sub( '^(.+)\.xlsx', '\1', infilename ) + '.mrms'
                 exptdata = pd.read_excel( rawpath + infilename, sheetname = "PeptideCountHeatMap" )
                 exptdata.to_csv( mrmspath + mrmsfile, sep = "\t", na_rep = 'NaN', index = False )
