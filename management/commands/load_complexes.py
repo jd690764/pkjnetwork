@@ -32,7 +32,7 @@ select
         group_concat(substring_index(substring_index(interid, '.', -2), '.', 1)) ids
 from interaction
 where srcdb = 'COMPLEXES'
-group by 1
+group by 1, 6
 order by 6, 1"""
 
 # query for by_gene_file
@@ -335,6 +335,13 @@ class Command(BaseCommand):
             help    = 'Reload table and do nothing else',
         )
         parser.add_argument(
+            '--reexport',
+            action  = 'store_true',
+            dest    = 'reexport',
+            default = False,
+            help    = 'Reexport ifile and do nothing else',
+        )
+        parser.add_argument(
             '--reparse',
             action  = 'store_true',
             dest    = 'reparse',
@@ -457,6 +464,9 @@ class Command(BaseCommand):
         elif options[ 'reparse' ]:
             self._parse_translate_file()
             self._load_dbtable()
+            self._export_ifile()
+            self._export_byGeneFile()            
+        elif options[ 'reexport' ]:
             self._export_ifile()
             self._export_byGeneFile()            
         else:
