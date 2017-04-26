@@ -10,7 +10,6 @@ from network.models import Refseq, Entrez
 from lib.config import filesDict
 
 
-
 class Command(BaseCommand):
     args = '<foo bar ...>'
     help = 'our help string comes here'
@@ -82,6 +81,9 @@ class Command(BaseCommand):
         # rename previous file
         os.rename( filesDict['dup'], filesDict['dup']+ '.old')
         pickle.dump(result, open( filesDict['dup'], 'wb'))
+
+        from lib import MSpreprocess as ms
+        ms.dupConvert( filesDict['duptxt'] )
         
     def handle(self, *args, **options):
         self._update_dup()

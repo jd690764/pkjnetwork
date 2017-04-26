@@ -12,7 +12,7 @@ path = 'data/interactions/'
 final = path+'biogrid_data_latest'
 files  = { 'http://thebiogrid.org/downloads/archives/Latest%20Release/BIOGRID-ALL-LATEST.tab2.zip' : [ path+'biogrid.zip', path+'biogrid_latest' ]}
 
-src_by_pmids = {'26186194': 'BIOPLEX', '22939629': 'EMILI', '26344197': 'EMILIv2', } # skip these datasets - they are loaded separately
+src_by_pmids = {'26186194': 'BIOPLEX', '22939629': 'EMILI', '26344197': 'EMILIv2', '23193263': 'PREPPI', '23023127': 'PREPPI' } # skip these datasets - they are loaded separately
 
 class Command(BaseCommand):
     args = '<foo bar ...>'
@@ -56,7 +56,7 @@ class Command(BaseCommand):
             
     def _load_dbtable( self ):
         
-        Interaction.objects.filter( srcdb__in = list(src_by_pmids.values())).delete()
+        Interaction.objects.filter( srcdb__in = 'BIOGRID').delete()
         
         with connection.cursor() as c:
             c.execute( 'LOAD DATA LOCAL INFILE %s REPLACE INTO TABLE tcga.interaction FIELDS TERMINATED BY "\t"', [final] )
@@ -92,6 +92,7 @@ class Command(BaseCommand):
                         if fields[1] == '-' or fields[2] == '-':
                             continue
                         if fields[14] in src_by_pmids:
+                            # avoid duplications
                             #fields[23] = src_by_pmids[ fields[14] ]
                             continue
 

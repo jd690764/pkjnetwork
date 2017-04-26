@@ -39,7 +39,7 @@ class Command(BaseCommand):
         )    
     
     def _download_from_uniprot( self ):
-        # download files from ftp site
+        print( 'download files from uniprot ftp site' )
         subprocess.call([ 'wget', '-q', files[0], '-O', files[2] ])
         subprocess.call([ 'wget', '-q', files[1], '-O', files[3] ])
                           
@@ -47,6 +47,7 @@ class Command(BaseCommand):
 
         with open( files[4], 'wt' ) as outf:
 
+            print( 'parse download data files.' )
             maxeid    = 0
             maxrsid   = 0
             maxomim   = 0
@@ -111,7 +112,7 @@ class Command(BaseCommand):
         
     def _load_dbtable( self ):
 
-        # load data into entrez table
+        print( 'load data into uniprot table' )
         Uniprot.objects.all().delete()
         with connection.cursor() as c:
             c.execute( "LOAD DATA LOCAL INFILE %s REPLACE INTO TABLE tcga.uniprot FIELDS TERMINATED BY '\t' OPTIONALLY ENCLOSED BY '\"' " + 
@@ -123,20 +124,23 @@ class Command(BaseCommand):
                        'ensid        = case when @var5 = "None" or @var5 = "" then NULL else @var5 end, ' +
                        'enspid       = case when @var6 = "None" or @var6 = "" then NULL else @var6 end; ' 
                        , [ files[4] ] )
-            c.execute( 'ALTER TABLE uniprot ADD INDEX upacc_i (upacc );' )
-            c.execute( 'ALTER TABLE uniprot ADD INDEX upid_i (upid );' )
-            c.execute( 'ALTER TABLE uniprot ADD INDEX eid_i (eid );' )                        
+            #c.execute( 'ALTER TABLE uniprot ADD INDEX upacc_i (upacc );' )
+            #c.execute( 'ALTER TABLE uniprot ADD INDEX upid_i (upid );' )
+            #c.execute( 'ALTER TABLE uniprot ADD INDEX eid_i (eid );' )                        
 
             
         
     def handle(self, *args, **options):
         print( '\n\n\n\n############################ ' + 'update uniprot data on ' + str(datetime.date.today()))
         if options[ 'reload' ]:
+            print( 'reload data into database.' )
             self._load_dbtable()
         elif options[ 'reparse' ]:
+            print( 'reparse and load data.' )
             self._parse_downloaded_files()
             self._load_dbtable()
         else:
+            print( 'no argument - do whole process.' )
             self._download_from_uniprot()
             self._parse_downloaded_files()
             self._load_dbtable()

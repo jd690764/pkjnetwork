@@ -19,8 +19,8 @@ path  = 'data/gene/'
 path2 = 'data/pickles/'
 files = [ 'ftp://ftp.ncbi.nih.gov/pub/HomoloGene/current/homologene.data',
           path+'hg.data',
-          path2+'h2m_latest', # hg pickle file
-          path2+'m2h_latest', # hg pickle file
+          'h2m_latest', # hg pickle file
+          'm2h_latest', # hg pickle file
           path+'h2m_ens.txt',
           path+'m2h_ens.txt',
           path+'h2m_ens_latest.txt',
@@ -136,8 +136,8 @@ class Command(BaseCommand):
                 else:
                     d[ heid ]  = { meid }
 
-        pickle.dump( d, open( f, 'wb' ))
-        with open( path+f+'.tsv', 'wt' ) as fh:
+        pickle.dump( d, open( path2+f, 'wb' ))
+        with open( path2+f+'.tsv', 'wt' ) as fh:
             for eid1 in d:
                 fh.write( eid1 + '\t' + str(','.join(d[eid1])) + '\n' ) 
             
