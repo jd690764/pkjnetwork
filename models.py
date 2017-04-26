@@ -145,7 +145,7 @@ class Ensembl(models.Model):
     scoord = models.IntegerField(blank=True, null=True)
     ecoord = models.IntegerField(blank=True, null=True)
     strand = models.CharField(max_length=1, blank=True, null=True)
-    ensid = models.CharField(max_length=40, blank=True, null=True)
+    ensid = models.CharField(primary_key=True, max_length=40)
     gname = models.CharField(max_length=40, blank=True, null=True)
     geneid = models.CharField(max_length=40, blank=True, null=True)
     gtype = models.CharField(max_length=50, blank=True, null=True)
@@ -177,7 +177,7 @@ class Entrez(models.Model):
     descr = models.CharField(db_column='DESCR', max_length=100, blank=True, null=True)  # Field name made lowercase.    
     external = models.CharField(db_column='EXTERNAL', max_length=200, blank=True, null=True)  # Field name made lowercase.
     location = models.CharField(db_column='LOCATION', max_length=50, blank=True, null=True)  # Field name made lowercase.
-    peptide = models.CharField(db_column='PEPTIDE', max_length=45000, blank=True, null=True)  # Field name made lowercase.
+    peptide = models.TextField(db_column='PEPTIDE', blank=True, null=True)  # Field name made lowercase.
     pubmed = models.TextField(db_column='PUBMED', blank=True, null=True)  # Field name made lowercase.
     summary = models.CharField(db_column='SUMMARY', max_length=10000, blank=True, null=True)  # Field name made lowercase.
     swissprot = models.CharField(db_column='SWISSPROT', max_length=20, blank=True, null=True)  # Field name made lowercase.
@@ -186,7 +186,7 @@ class Entrez(models.Model):
     taxid = models.IntegerField(db_column='TAXID', blank=True, null=True)  # Field name made lowercase.
     trembl = models.CharField(db_column='TREMBL', max_length=20, blank=True, null=True)  # Field name made lowercase.
     genetype = models.CharField(db_column='GENETYPE', max_length=20, blank=True, null=True)  # Field name made lowercase.
-    mrna = models.CharField(db_column='MRNA', max_length=5000, blank=True, null=True)  # Field name made lowercase.
+    mrna = models.CharField(db_column='MRNA', max_length=10000, blank=True, null=True)  # Field name made lowercase.
     
     class Meta:
         managed = False
@@ -253,7 +253,7 @@ class GeneCoords(models.Model):
 
 
 class Hgnc(models.Model):
-    hgnc_id = models.CharField(max_length=20, blank=True, null=True)
+    hgnc_id = models.CharField(max_length=20, primary_key=True)
     symbol = models.CharField(max_length=40, blank=True, null=True)
     hgnc_name = models.CharField(max_length=500, blank=True, null=True)
     locus_group = models.CharField(max_length=20, blank=True, null=True)
@@ -321,18 +321,18 @@ class Homologene(models.Model):
 
 
 class Interaction(models.Model):
-    interid = models.CharField(db_column='INTERID', max_length=30, primary_key=True)  # Field name made lowercase.
+    interid = models.CharField(db_column='INTERID', max_length=200, primary_key=True)  # Field name made lowercase.
     entreza = models.IntegerField(db_column='ENTREZA')  # Field name made lowercase.
     entrezb = models.IntegerField(db_column='ENTREZB')  # Field name made lowercase.
     symbola = models.CharField(db_column='SYMBOLA', max_length=50, blank=True, null=True)  # Field name made lowercase.
     symbolb = models.CharField(db_column='SYMBOLB', max_length=50, blank=True, null=True)  # Field name made lowercase.
     organisma = models.IntegerField(db_column='ORGANISMA', blank=True, null=True)  # Field name made lowercase.
     organismb = models.IntegerField(db_column='ORGANISMB', blank=True, null=True)  # Field name made lowercase.
-    system = models.CharField(db_column='SYSTEM', max_length=50, blank=True, null=True)  # Field name made lowercase.
+    system = models.CharField(db_column='SYSTEM', max_length=300, blank=True, null=True)  # Field name made lowercase.
     systemtype = models.CharField(db_column='SYSTEMTYPE', max_length=20, blank=True, null=True)  # Field name made lowercase.
     throughput = models.CharField(db_column='THROUGHPUT', max_length=10, blank=True, null=True)  # Field name made lowercase.
     score = models.FloatField(db_column='SCORE', blank=True, null=True)  # Field name made lowercase.
-    pmid = models.IntegerField(db_column='PMID', blank=True, null=True)  # Field name made lowercase.
+    pmid = models.CharField(max_length=500, blank=True, null=True)  # Field name made lowercase.
     srcdb = models.CharField(db_column='SRCDB', max_length=20, blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
@@ -391,9 +391,9 @@ class Ncbiprot(models.Model):
     eid = models.IntegerField(db_column='EID')  # Field name made lowercase.
     gi = models.IntegerField(db_column='GI', primary_key=True)  # Field name made lowercase.
     len = models.IntegerField(db_column='LEN', blank=True, null=True)  # Field name made lowercase.
-    seq = models.CharField(db_column='SEQ', max_length=60000, blank=True, null=True)  # Field name made lowercase.
+    seq = models.TextField(db_column='SEQ', blank=True, null=True)  # Field name made lowercase.
     symbol = models.CharField(db_column='SYMBOL', max_length=50)  # Field name made lowercase.
-    taxid = models.IntegerField(db_column='TAXID', blank=True, null=True)  # Field name made lowercase.
+    taxid = models.IntegerField(db_column='TAXID')  # Field name made lowercase.
     mrna = models.CharField(db_column='MRNA', max_length=5000, blank=True, null=True)  # Field name made lowercase.
     
     class Meta:
@@ -468,7 +468,96 @@ class Refseq(models.Model):
         managed = False
         db_table = 'refseq'
 
+class Sample(models.Model):
+    uid = models.CharField(max_length=20,
+                           help_text='Unique id for the experiment: PJXnnn')
+    label = models.CharField(max_length=50,
+                             help_text='label for the experiment, e.g.: RalB S28N')
+    cell_line = models.CharField(max_length=50,
+                                 help_text='cell line used for the experiment, e.g.: IMCD3')
+    condition = models.CharField(max_length=50,
+                                 blank=True,
+                                 null=True,
+                                 help_text='experimental condition, e.g.: + doxorubicin')
+    variant = models.CharField(max_length=50,
+                               blank=True,
+                               null=True,
+                               help_text='Mutation/truncation ... in the bait, e.g.: mut (S17N - GDP)')
+    tag = models.CharField(max_length=5,
+                           choices = (('nt', 'N-term'),('ct', 'C-term'),('lap1', 'N-term (LAP1)'), ('lap6', 'N-term (LAP6)'),('lap7', 'C-term (LAP7)'),('uk', 'unknown')),
+                           help_text='The tag, that is fused to the protein of interest, e.g.: N-term(LAP6)')
+    tag_length = models.IntegerField(help_text='Length of the tag fused to the protein. This is only interesting for N-terminal fusions.')
+    facility = models.CharField(max_length=5,
+                                help_text='At which facility the MS was performed, e.g.: SUMS',
+                                choices = (('lane', "Bill Lane's facility"), ('sums', 'SUMS')),
+                                default='sums')
+    bait_symbol = models.CharField(max_length=20,
+                                   help_text='Gene symbol for the bait, e.g.: KRAS')
+    eid = models.IntegerField( help_text='Entrez id for the gene', blank = True, null = True)
+    rawfile = models.CharField(max_length=100,
+                               help_text="Name of the 'rawfile' (protein level summary file) as given by the facility, e.g.: 20160718_NMooney_p53Extras_HeatMaps.xlsx")
+    bgfile = models.CharField(max_length=100,
+                              blank=True,
+                              null=True,
+                              help_text="Name of the 'background' (summary file of a pre-sample run) as given by the facility, e.g.: 160628_Blank_Pre_rerun_p53_plus.raw_20160711_Byonic_Mouse.xlsx")
+    mrmsfile = models.CharField(max_length=50,
+                                blank=True,
+                                null=True,
+                                help_text="Name of a converted (into text) of a 'rawfile', e.g.: IFT88_9606_RPE_RABL2B_WT.mrms")
+    lab = models.CharField(max_length=20,
+                           choices=(('jackson', 'Jackson lab'), ('sage', 'Sage lab'), ('attardi', 'Attardi lab'),
+                                    ('fire', 'Fire lab'), ('einav', 'Einav lab'), ('carette', 'Carette lab'),
+                                    ('gleeson', 'Gleeson lab'), ('arvin', 'Arvin lab'), ('bogyo', 'Bogyo lab'),
+                                    ('sweet-cordero', 'Sweet-Cordero lab'), ('greenberg', 'Greenberg lab'), ('wernig', 'Wernig lab')),
+                           default='jackson',
+                           help_text='Lab for which the experiment was conducted, e.g.:Jackson lab ')
+    exptype = models.CharField(max_length=5,
+                               choices=(('apms', 'AP-MS'), ('apex2', 'APEX2')),
+                               help_text='The type of experiment, e.g.: AP-MS',
+                               default='apms' ) 
+    note = models.CharField(max_length=500,
+                            blank=True,
+                            null=True,
+                            help_text="Any note(s) worth mentioning.") 
+    ff_folder = models.CharField(max_length=50,
+                                 blank=True,
+                                 null=True,                                 
+                                 help_text="Name of folder where fraction files are stored.") 
+    box_folder = models.CharField(max_length=50,
+                                  blank=True,
+                                  null=True,
+                                  help_text="Name of folder in box account where data were uploaded by SUMS.") 
+    date_back = models.DateField(help_text='Date the mass spec data were ready.',
+                                 blank=True,
+                                 null=True,)
+    taxid = models.IntegerField(blank=True, null=True, help_text='Taxid of organism of the cell line.', choices=((9606, 'human'),(10090, 'mouse')))
 
+    def get_absolute_url(self):
+        """
+        Returns the url to access a particular sample instance.
+        """
+        return reverse('sample-detail', args=[str(self.id)])
+
+    class Meta:
+        managed = True
+
+        
+class Uniprot(models.Model):
+    upacc = models.CharField(primary_key=True, max_length=20)
+    upid = models.CharField(max_length=20, blank=True, null=True)
+    eid = models.CharField(max_length=500, blank=True, null=True)
+    refseqid = models.CharField(max_length=1000, blank=True, null=True)
+    taxid = models.IntegerField(blank=True, null=True)
+    omim = models.CharField(max_length=200, blank=True, null=True)
+    pmid = models.CharField(max_length=5000, blank=True, null=True)
+    ensid = models.CharField(max_length=500, blank=True, null=True)
+    enspid = models.CharField(max_length=2000, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'uniprot'
+
+        
 class Syns_view(models.Model):
     source = models.CharField(max_length=6)
     eid = models.CharField(max_length=20, blank=True, null=True)
