@@ -8,5 +8,6 @@ urlpatterns = [
     url(r'^display/', views.display, name='display'),
     url(r'^index/', views.index, name='index'),
     url(r'^lookup/', views.lookup, name='lookup'),
+    url(r'^lookupPTM/', views.lookupPTM, name='lookupPTM'),    
     #url(r'^lookupDisplay/', views.lookupDisplay, name='lookupDisplay'),
 ]
