@@ -3,6 +3,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 from django.views import generic
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q 
 
 import time
 # interactors handles the main 'node', 'edge','interaction', and 'dataSet' classes
@@ -17,6 +18,7 @@ import sys
 from lib.markutils import tabulate
 from numpy import percentile, unique
 import lib.forms as fs
+from network.models import Sample
 
 import logging
 logger = logging.getLogger('django')
@@ -24,6 +26,7 @@ logger = logging.getLogger('django')
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
+orgDict = { '10090': 'mouse', '9606': 'human' }
 
 def index(request):
     return HttpResponse("Hello - Please login first!")
@@ -36,12 +39,11 @@ def createNetwork( request ):
         if re.search( '^[^\.].*yaml$', f ):
             yamlfiles[f] = f
             
-#    for k in yamlfiles:
-#        print( k + ' ' + yamlfiles[k] )
     return render( request, 'network/createNetwork.html',  { 'yamlfiles' : sorted(yamlfiles.keys()) } )
 
 @login_required()
 def display( request ):
+    import time
     t0    = time.time()
     fname = cf.djPath + 'data/nwfiles/' + request.POST['yaml']
     #print( 'fname=' + fname )
@@ -113,10 +115,83 @@ def lookup( request ):
             result.append( [ siglist[i][0], '(rank ' + str(i+1) + '/' + str(len(siglist)) + ' appearances)', '[{: <4.2E}]'.format( siglist[i][1]), siglist[i][2], siglist[i][3] ] )
             
     eform  = fs.lookupForm( initial={'org': 'all', 'bait': 'all'} )
-    if org == '9606':
-        org    = 'Human'
-    elif org == '10090':
-        org    = 'Mouse'
         
-    return render( request, 'network/lookup.html', { 'form' : eform, 'choices': result, 'symbol': symbol, 'bait': bait, 'org': org })
+    return render( request, 'network/lookup.html', { 'form' : eform, 'choices': result, 'symbol': symbol, 'bait': bait, 'org': orgDict[org] })
+
+@login_required()
+def lookupPTM( request ):
+
+    result       = list()
+    org          = None
+    bait         = None
+    symbol       = None
+    modification = None
+    expt         = None
+    
+    if request.method == 'POST':
+
+        org          = request.POST['org']
+        bait         = request.POST.getlist('bait')
+        symbol       = request.POST['symbol']
+        expt         = request.POST['expt']
+        modification = request.POST['modif']
+        siglist      = list()
+        dfilenames   = list()
+        ptm_dir      = '/mnt/msrepo/fractionFiles/PTMs/'
+        
+        dirs       = [ x for x in os.listdir(ptm_dir)]
+
+        baitl      = [ b.lower() for b in bait ]
+
+        query      = Sample.objects.all()
+        
+        if not 'all' in bait:
+            query  = query.filter(bait_symbol__in=bait)
+        
+        if not org == 'all':
+            query  = query.filter(taxid = org )
+
+        if not 'all' in expt:
+            query  = query.filter(label=expt)
+
+        query      = query.filter(ff_folder__isnull=False).filter(ff_folder__in=dirs)
+        qresult    = query.values('ff_folder', 'label')
+        to_search  = [ d['ff_folder'] for d in qresult]
+        labels     = { d['ff_folder']: d['label'] for d in qresult}
+
+        for d in to_search:
+            try:
+                dfilenames.append([ ptm_dir + d + '/' + f for f in os.listdir(ptm_dir + d) if re.search(r'.*mods_summary_data.tsv', f)][0])
+            except IndexError:
+                continue
+
+        for dfn in dfilenames :
+            if re.search(r'WT1', dfn):
+                # some bad character in the file breaks it
+                continue
+            
+            with open(dfn, 'rt') as dfile :
+                for line in dfile:
+                #for linel in tabulate(dfile) :
+                    linel         = line.strip().split('\t')
+                    print(linel[1] + '  ' + linel[3])
+                    if linel[0].startswith('#') :
+                        continue ;
+                    elif linel[1].lower() == symbol.lower() and linel[3] == modification: 
+                        dset      = linel[0]
+                        descr     = linel[2]
+                        resid     = linel[5]
+                        pos       = int(linel[4])
+                        mod_count = float( linel[6] )
+                        all_count = float( linel[7] )
+                        print( dset + '+' + descr + '+' + resid + '+' + str(pos) + '+' + str(mod_count) + '+' + str(all_count))
+                        siglist.append([ labels[dset], descr, resid, pos, mod_count, all_count, '{0:.2f}'.format(100 * mod_count/all_count) ])
+                        #break
+                    
+        siglist = sorted( siglist, key=lambda x: (x[0], x[1], x[3]))
+        result  = siglist
+            
+    eform  = fs.lookupPtmForm( initial={'org': 'all', 'bait': 'all', 'expt': 'all', 'modif': 'Phosphorylation'} )
+        
+    return render( request, 'network/lookupPTM.html', { 'form' : eform, 'choices': result, 'symbol': symbol, 'bait': bait, 'org': orgDict[org], 'expt': expt, 'mods': modification })
 
