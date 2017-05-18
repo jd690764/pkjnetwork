@@ -1,0 +1,39 @@
+{% extends "base_generic.html" %}
+{% block content %}
+<h1>Enter a symbol and select baits, organisms and experiments for lookup</h1>
+<form role="form" action="{% url 'network:lookupPTM' %}" method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Submit</button>
+</form>
+
+<br>
+{% if not symbol is None %}
+<h3><fon color="red">{{ symbol }} {{mods}}</font>:</h4>
+
+<h4>in organism(s): <font color="RED">{{ org }} </font></h4>
+<h4>in baits: <font color="RED">{{ bait }}</font></h4>
+<h4>in experiments: <font color="RED">{{ expt }}</font></h4>
+
+<table class="table table-hover">
+  <tr>
+    <th>dataset</th>
+    <th>description</th>
+    <th>residue</th>
+    <th>position</th>
+    <th>modified (peptide count)</th>
+    <th>all (peptide count)</th>
+    <th>percent modified</th>
+  </tr>
+    
+  {% for values in choices %}
+  <tr>
+    {% for v in values %}
+      <td><b>{{ v }}</b></td>
+    {% endfor %}    
+  <tr>
+  {% endfor %}
+    
+</table>
+{% endif %}
+{% endblock %}
