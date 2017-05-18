@@ -424,6 +424,33 @@ class Orthology(models.Model):
         db_table = 'orthology'
 
 
+class Preprocess(models.Model):
+    rawfile = models.CharField( max_length = 100,
+                                help_text = 'Excel file that contains protein level data',
+                                blank=True, null=True)
+    bait_symbol_eid = models.CharField( max_length = 30,
+                                        help_text = 'bait symbol and entrez id (or 00): e.g. BBS4_585')
+    taxid = models.IntegerField( help_text = 'NCBI taxonomy id for organism (of the cell line)',
+                                 choices = ((9606, 9606), (10090, 10090)))
+    special = models.CharField( max_length = 50,
+                                help_text = 'Used to create the .i file; string to distinguish samples.',
+                                blank=True, null=True)
+    parser = models.CharField( max_length = 10,
+                               help_text = 'Source file format - how to parse the data file.',
+                               choices = (('lane', 'Lane'), ('sums', 'SUMS'), ('xml', 'XML'), ('laneExcel', 'LaneExcel')))
+    bgfile = models.CharField( max_length = 100,
+                              help_text = 'Pre-run (blank) file, if available.',
+                              blank=True, null=True)
+    mrmsfile = models.CharField( max_length = 50,
+                                help_text = 'Name of text version of rawfile.',
+                                blank=True, null=True)
+    comment = models.CharField( max_length = 200,
+                               help_text = 'Any relevant comment related to this processing step.',
+                               blank=True, null=True)
+    pjx = models.CharField( max_length = 20,
+                            help_text = 'A PJXnnn id, that identifies the experiment.' )
+
+                    
 class ProfBcs(models.Model):
     barcode_id = models.IntegerField()
     profile_id = models.IntegerField()
@@ -475,7 +502,7 @@ class Sample(models.Model):
                              help_text='label for the experiment, e.g.: RalB S28N')
     cell_line = models.CharField(max_length=50,
                                  help_text='cell line used for the experiment, e.g.: IMCD3')
-    condition = models.CharField(max_length=50,
+    cond = models.CharField(max_length=50,
                                  blank=True,
                                  null=True,
                                  help_text='experimental condition, e.g.: + doxorubicin')
@@ -484,12 +511,14 @@ class Sample(models.Model):
                                null=True,
                                help_text='Mutation/truncation ... in the bait, e.g.: mut (S17N - GDP)')
     tag = models.CharField(max_length=5,
-                           choices = (('nt', 'N-term'),('ct', 'C-term'),('lap1', 'N-term (LAP1)'), ('lap6', 'N-term (LAP6)'),('lap7', 'C-term (LAP7)'),('uk', 'unknown')),
+                           choices = (('nt', 'N-term'),('ct', 'C-term'),('lap1', 'N-term (LAP1)'), ('lap6', 'N-term (LAP6)'),
+                                      ('lap7', 'C-term (LAP7)'),('ctv5', 'C-term (V5-TEV-S-tag)'), ('lap5', 'C-term (LAP5)'),
+                                      ('lap3', 'N-term (LAP3)'), ('uk', 'unknown'), ('none', 'none')),
                            help_text='The tag, that is fused to the protein of interest, e.g.: N-term(LAP6)')
     tag_length = models.IntegerField(help_text='Length of the tag fused to the protein. This is only interesting for N-terminal fusions.')
     facility = models.CharField(max_length=5,
                                 help_text='At which facility the MS was performed, e.g.: SUMS',
-                                choices = (('lane', "Bill Lane's facility"), ('sums', 'SUMS')),
+                                choices = (('lane', "Bill Lane facility"), ('sums', 'SUMS'), ('other', 'Other')),
                                 default='sums')
     bait_symbol = models.CharField(max_length=20,
                                    help_text='Gene symbol for the bait, e.g.: KRAS')
@@ -505,9 +534,10 @@ class Sample(models.Model):
                                 null=True,
                                 help_text="Name of a converted (into text) of a 'rawfile', e.g.: IFT88_9606_RPE_RABL2B_WT.mrms")
     lab = models.CharField(max_length=20,
-                           choices=(('jackson', 'Jackson lab'), ('sage', 'Sage lab'), ('attardi', 'Attardi lab'),
+                           choices=(('jackson', 'Jackson lab'), ('jackson/sage', 'Jackson/Sage labs'), ('sage', 'Sage lab'), ('attardi', 'Attardi lab'),
                                     ('fire', 'Fire lab'), ('einav', 'Einav lab'), ('carette', 'Carette lab'),
                                     ('gleeson', 'Gleeson lab'), ('arvin', 'Arvin lab'), ('bogyo', 'Bogyo lab'),
+                                    ('cimprich', 'Cimprich lab'), ('lewis', 'Lewis lab'),
                                     ('sweet-cordero', 'Sweet-Cordero lab'), ('greenberg', 'Greenberg lab'), ('wernig', 'Wernig lab')),
                            default='jackson',
                            help_text='Lab for which the experiment was conducted, e.g.:Jackson lab ')
@@ -531,7 +561,11 @@ class Sample(models.Model):
                                  blank=True,
                                  null=True,)
     taxid = models.IntegerField(blank=True, null=True, help_text='Taxid of organism of the cell line.', choices=((9606, 'human'),(10090, 'mouse')))
+    discard = models.NullBooleanField(blank = True, null = True,
+                                  help_text = 'Is this a bad experiment?',
+                                  choices = ((True, 'discard'), (False, 'keep')))
 
+    
     def get_absolute_url(self):
         """
         Returns the url to access a particular sample instance.
