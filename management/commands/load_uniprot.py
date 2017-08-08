@@ -3,11 +3,12 @@ from os import listdir
 from os.path import isfile, join
 import gzip
 import re
-from lib.fileUtils import downloadFromUrl
-from network.models import Uniprot
+from lib.fileUtils import downloadFromUrl, gunzip
+from network.models import Uniprot, Updet
 from django.db import connection
 import subprocess
 import datetime
+from Bio import SwissProt
 
 path  = 'data/protein/'
 
@@ -15,7 +16,19 @@ files = [ 'ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledge
           'ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/by_organism/MOUSE_10090_idmapping_selected.tab.gz',
           path + 'hs_uniprot.gz',
           path + 'mm_uniprot.gz',
-          path + 'uniprot_latest' ]
+          path + 'uniprot_latest',
+          'ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/taxonomic_divisions/uniprot_sprot_human.dat.gz',
+          'ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/taxonomic_divisions/uniprot_sprot_rodents.dat.gz',
+          'ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/taxonomic_divisions/uniprot_trembl_human.dat.gz',
+          'ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/taxonomic_divisions/uniprot_trembl_rodents.dat.gz',
+          'uniprot_sprot_human.dat',
+          'uniprot_sprot_rodents.dat',
+          'uniprot_trembl_human.dat',
+          'uniprot_trembl_rodents.dat',
+          'uniprot_sprot.dat', ]
+
+xrefs = ['GeneID', 'Refseq', 'MGI', 'HGNC']
+xdoms = ['PROSITE', 'InterPro', 'CDD', 'SMART', 'Pfam', ]
 
 class Command(BaseCommand):
     args = '<foo bar ...>'
@@ -42,12 +55,18 @@ class Command(BaseCommand):
         print( 'download files from uniprot ftp site' )
         subprocess.call([ 'wget', '-q', files[0], '-O', files[2] ])
         subprocess.call([ 'wget', '-q', files[1], '-O', files[3] ])
+        subprocess.call([ 'wget', '-q', files[5], '-O', files[9] ])
+        subprocess.call([ 'wget', '-q', files[6], '-O', files[10] ])
+        subprocess.call([ 'wget', '-q', files[7], '-O', files[11] ])
+        subprocess.call([ 'wget', '-q', files[8], '-O', files[12] ])
+        for i in range(5, 9):
+            gunzip( path+files[i]+'.gz', path, files[i] )
                           
     def _parse_downloaded_files( self ):
 
         with open( files[4], 'wt' ) as outf:
 
-            print( 'parse download data files.' )
+            print( 'parse downloaded data files.' )
             maxeid    = 0
             maxrsid   = 0
             maxomim   = 0
@@ -55,6 +74,7 @@ class Command(BaseCommand):
             maxensid  = 0
             maxenspid = 0            
 
+            print( 'xref files...' )
             for i in range(2,4,1):
                 gz = files[i]
                 with gzip.open( gz, 'rt' ) as inf:
@@ -109,7 +129,60 @@ class Command(BaseCommand):
                         maxenspid = len(enspid) if len(enspid) > maxenspid else maxenspid
 
             print( 'maxeid: ' + str(maxeid) + '\nmaxrsid: ' + str(maxrsid) + '\nmaxomim: ' + str(maxomim) + '\nmaxpmid: ' + str(maxpmid) + '\nmaxensid: ' + str(maxensid) + '\nmaxenspid: ' + str(maxenspid) + '\n' )
-        
+
+        print( 'uniprot flat files...' )
+        with open( path + files[13], 'wt' ) as outf:
+
+            for j in [9,10,11,12]:
+                print( files[j] + '...' )
+                with open(path + files[j], 'rt') as handle:
+                    for record in SwissProt.parse(handle):
+                        if record.taxonomy_id[0] in ['9606', '10090']:
+                            accs  = record.accessions
+                            acc   = accs.pop(0)
+                            rev   = record.data_class
+                            gname = re.sub(r'.*Name=([^;{]+)[{;].*', r'\1', record.gene_name).strip()
+                            uid   = record.entry_name
+                            taxid = record.taxonomy_id[0]
+                            seq   = record.sequence
+                            sinfo = str(record.seqinfo[0])
+                            rname = '\N'
+                            fname = '\N'
+                            sname = '\N'
+                            flags = '\N'
+                            if 'RecName' in record.description:
+                                rname = re.sub(r'.*RecName: *Full=([^;{]+)[{;].*', r'\1', record.description, re.IGNORECASE).strip()
+                            elif 'SubName' in record.description:
+                                rname = re.sub(r'.*SubName: *Full=([^;{]+) *[;{].*', r'\1', record.description, re.IGNORECASE).strip()
+                            if 'AltName' in record.description:
+                                if re.search(r'AltName:[^:]*Full=', record.description, re.IGNORECASE): 
+                                    fname = re.sub(r'.*AltName:[^:]*Full=([^;{]+)[{;].*', r'\1', record.description, re.IGNORECASE).strip()
+                                if re.search(r'AltName:[^:]*Short=', record.description, re.IGNORECASE): 
+                                    sname = re.sub(r'.*AltName:[^:]*Short=([^;{]+)[{;].*', r'\1', record.description, re.IGNORECASE).strip()
+                            if 'Flags:' in record.description:
+                                flags = re.sub(r'.*Flags: *([^;]+);.*', r'\1', record.description, re.IGNORECASE).strip()
+                            refs  = list()
+                            eids  = list()
+                            mgis  = list()
+                            hgnc  = list()
+                            dids  = list()
+                            dnms  = list()
+                            ddbs  = list()
+                            for i in range(0, len(record.cross_references)):
+                                if record.cross_references[i][0] == 'GeneID':
+                                    eids.append(record.cross_references[i][1])
+                                if record.cross_references[i][0] == 'RefSeq':
+                                    refs.append(re.sub(r'\.\d+$', r'', record.cross_references[i][1]))
+                                if record.cross_references[i][0] == 'MGI':
+                                    mgis.append(record.cross_references[i][1])
+                                if record.cross_references[i][0] == 'HGNC':
+                                    hgnc.append(record.cross_references[i][1])
+                                if record.cross_references[i][0] in xdoms:
+                                    dids.append(record.cross_references[i][1])
+                                    ddbs.append(record.cross_references[i][0])
+                                    dnms.append(record.cross_references[i][2])
+                            outf.write( '\t'.join([ acc, uid, taxid, rev, gname, rname, fname, sname, flags, '|'.join(accs), '|'.join(eids), '|'.join(refs), '|'.join(hgnc), '|'.join(mgis), '|'.join(ddbs), '|'.join(dids), '|'.join(dnms), sinfo, seq ]) + '\n' )          
+            
     def _load_dbtable( self ):
 
         print( 'load data into uniprot table' )
@@ -127,7 +200,11 @@ class Command(BaseCommand):
             #c.execute( 'ALTER TABLE uniprot ADD INDEX upacc_i (upacc );' )
             #c.execute( 'ALTER TABLE uniprot ADD INDEX upid_i (upid );' )
             #c.execute( 'ALTER TABLE uniprot ADD INDEX eid_i (eid );' )                        
-
+        print( 'load data into updet table' )
+        Updet.objects.all().delete()
+        with connection.cursor() as c:
+            c.execute( "LOAD DATA LOCAL INFILE %s REPLACE INTO TABLE tcga.updet FIELDS TERMINATED BY '\t' OPTIONALLY ENCLOSED BY '\"' " + 
+                       '(upacc, upid, taxid, status, gname, recname, fullname, shortname, flags, upaccs, eid, refseqid, hgncid, mgid, domaindb, domainid, domainname, seqinfo, seq)', [ path + files[13] ] )
             
         
     def handle(self, *args, **options):
