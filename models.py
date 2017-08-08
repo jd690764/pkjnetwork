@@ -174,15 +174,15 @@ class Enshom(models.Model):
 class Entrez(models.Model):
     eid = models.IntegerField(db_column='EID', primary_key=True)  # Field name made lowercase.
     cdd = models.CharField(db_column='CDD', max_length=200, blank=True, null=True)  # Field name made lowercase.
-    descr = models.CharField(db_column='DESCR', max_length=100, blank=True, null=True)  # Field name made lowercase.    
+    descr = models.CharField(db_column='DESCR', max_length=500, blank=True, null=True)  # Field name made lowercase.    
     external = models.CharField(db_column='EXTERNAL', max_length=200, blank=True, null=True)  # Field name made lowercase.
     location = models.CharField(db_column='LOCATION', max_length=50, blank=True, null=True)  # Field name made lowercase.
     peptide = models.TextField(db_column='PEPTIDE', blank=True, null=True)  # Field name made lowercase.
     pubmed = models.TextField(db_column='PUBMED', blank=True, null=True)  # Field name made lowercase.
     summary = models.CharField(db_column='SUMMARY', max_length=10000, blank=True, null=True)  # Field name made lowercase.
     swissprot = models.CharField(db_column='SWISSPROT', max_length=20, blank=True, null=True)  # Field name made lowercase.
-    symbol = models.CharField(db_column='SYMBOL', max_length=50)  # Field name made lowercase.
-    synonym = models.CharField(db_column='SYNONYM', max_length=200, blank=True, null=True)  # Field name made lowercase.
+    symbol = models.CharField(db_column='SYMBOL', max_length=200)  # Field name made lowercase.
+    synonym = models.CharField(db_column='SYNONYM', max_length=5000, blank=True, null=True)  # Field name made lowercase.
     taxid = models.IntegerField(db_column='TAXID', blank=True, null=True)  # Field name made lowercase.
     trembl = models.CharField(db_column='TREMBL', max_length=20, blank=True, null=True)  # Field name made lowercase.
     genetype = models.CharField(db_column='GENETYPE', max_length=20, blank=True, null=True)  # Field name made lowercase.
@@ -536,8 +536,8 @@ class Sample(models.Model):
     lab = models.CharField(max_length=20,
                            choices=(('jackson', 'Jackson lab'), ('jackson/sage', 'Jackson/Sage labs'), ('sage', 'Sage lab'), ('attardi', 'Attardi lab'),
                                     ('fire', 'Fire lab'), ('einav', 'Einav lab'), ('carette', 'Carette lab'),
-                                    ('gleeson', 'Gleeson lab'), ('arvin', 'Arvin lab'), ('bogyo', 'Bogyo lab'),
-                                    ('cimprich', 'Cimprich lab'), ('lewis', 'Lewis lab'),
+                                    ('gleeson', 'Gleeson lab'), ('arvin', 'Arvin lab'), ('bogyo', 'Bogyo lab'), ('cleary', 'Cleary lab'),
+                                    ('cimprich', 'Cimprich lab'), ('lewis', 'Lewis lab'), ('chen', 'Chen lab'),
                                     ('sweet-cordero', 'Sweet-Cordero lab'), ('greenberg', 'Greenberg lab'), ('wernig', 'Wernig lab')),
                            default='jackson',
                            help_text='Lab for which the experiment was conducted, e.g.:Jackson lab ')
@@ -591,6 +591,31 @@ class Uniprot(models.Model):
         managed = False
         db_table = 'uniprot'
 
+
+class Updet(models.Model):
+    upacc = models.CharField(primary_key=True, max_length=20)
+    upid = models.CharField(max_length=20, blank=True, null=True)
+    taxid = models.IntegerField(blank=True, null=True)
+    status = models.CharField(max_length=50, blank=True, null=True)
+    gname = models.CharField(max_length=50, blank=True, null=True)
+    recname = models.CharField(max_length=200, blank=True, null=True)
+    fullname = models.CharField(max_length=500, blank=True, null=True)
+    shortname = models.CharField(max_length=200, blank=True, null=True)
+    flags = models.CharField(max_length=20, blank=True, null=True)
+    upaccs = models.CharField(max_length=1000, blank=True, null=True)
+    eid = models.CharField(max_length=50, blank=True, null=True)
+    refseqid = models.CharField(max_length=1000, blank=True, null=True)
+    hgncid = models.CharField(max_length=50, blank=True, null=True)
+    mgid = models.CharField(max_length=50, blank=True, null=True)
+    domaindb = models.CharField(max_length=100, blank=True, null=True)
+    domainid = models.CharField(max_length=1000, blank=True, null=True)
+    domainname = models.CharField(max_length=2000, blank=True, null=True)
+    seqinfo = models.IntegerField(blank=True, null=True)
+    seq = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'updet'        
         
 class Syns_view(models.Model):
     source = models.CharField(max_length=6)
