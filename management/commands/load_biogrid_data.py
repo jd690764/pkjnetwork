@@ -12,7 +12,7 @@ path = 'data/interactions/'
 final = path+'biogrid_data_latest'
 files  = { 'http://thebiogrid.org/downloads/archives/Latest%20Release/BIOGRID-ALL-LATEST.tab2.zip' : [ path+'biogrid.zip', path+'biogrid_latest' ]}
 
-src_by_pmids = {'26186194': 'BIOPLEX', '22939629': 'EMILI', '26344197': 'EMILIv2', '23193263': 'PREPPI', '23023127': 'PREPPI' } # skip these datasets - they are loaded separately
+src_by_pmids = {'26186194': 'BIOPLEX', '28514442': 'BIOPLEXv2', '22939629': 'EMILI', '26344197': 'EMILIv2', '23193263': 'PREPPI', '23023127': 'PREPPI' } # skip these datasets - they are loaded separately
 
 class Command(BaseCommand):
     args = '<foo bar ...>'
