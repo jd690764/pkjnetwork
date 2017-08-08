@@ -35,6 +35,30 @@ class Command(BaseCommand):
     args = '<foo bar ...>'
     help = 'our help string comes here'
 
+    def add_arguments(self, parser):    
+        # Named (optional) arguments
+        parser.add_argument(
+            '--reload',
+            action  = 'store_true',
+            dest    = 'reload',
+            default = False,
+            help    = 'Reload table and do nothing else',
+        )
+        parser.add_argument(
+            '--reparse',
+            action  = 'store_true',
+            dest    = 'reparse',
+            default = False,
+            help    = 'Reparse previously downloaded data and reload table',
+        )
+        parser.add_argument(
+            '--pickle',
+            action  = 'store_true',
+            dest    = 'pickle',
+            default = False,
+            help    = 'Only export files into the pickle directory',
+        )         
+
     def _download_from_entrez_and_convert( self ):
 
         for org, f in files.items():
@@ -205,7 +229,7 @@ class Command(BaseCommand):
                         "cdd",
                         "where x.domain is not null",
                         "and x.domain <> ''",
-                        "and x.domain = cdd.pssm",
+                        "and x.domain = cdd.acc",
                          "group by x.symbol, x.taxid"])
         print( sql )
 
@@ -220,8 +244,22 @@ class Command(BaseCommand):
             
     def handle(self, *args, **options):
         print( '\n\n\n\n############################ ' + 'update Entrez data on ' + str(datetime.date.today()))
-        self._download_from_entrez_and_convert()
-        self._parse_file()
-        self._load_dbtable()
+
+        if options[ 'pickle' ]:
+            print( 'pickle data' )
+            pass
+        elif options[ 'reload' ]:
+            print( 'reloading data' )
+            self._load_dbtable() 
+        elif options[ 'reparse' ]:
+            print( 'reparsing data')
+            self._parse_file()
+            self._load_dbtable()
+        else :
+            print( 'downloading new data' )
+            self._download_from_entrez_and_convert()
+            self._parse_file()
+            self._load_dbtable()
+            
         self._pickler()
         self._export_domain_file()
