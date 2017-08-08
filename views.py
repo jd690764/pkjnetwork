@@ -26,7 +26,7 @@ logger = logging.getLogger('django')
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
-orgDict = { '10090': 'mouse', '9606': 'human' }
+orgDict = { '10090': 'mouse', '9606': 'human', 'all': 'all'}
 
 def index(request):
     return HttpResponse("Hello - Please login first!")
@@ -87,6 +87,16 @@ def lookup( request ):
         bait       = request.POST.getlist('bait')
         symbol     = request.POST['symbol']
         siglist    = list()
+        use_regex  = True if re.search(r'\*', symbol) else False
+        limit_to_one_dataset = False
+        if re.search(r'.*\*.*', symbol):
+            if re.search( r'^\*$', symbol):
+                limit_to_one_dataset = True
+
+            symbol = symbol.lower()
+            sym_re = re.compile( '^' + re.sub(r'\*', r'.*', symbol) )
+        else:
+            sym_re = re.compile( '^' + symbol )    
     
         ifilenames = [fn for fn in os.listdir('/mnt/msrepo/ifiles') if fn[-2:] == '.i' and not 'bioplex' in fn and fn[0] != '.' ]
         baitl      = [ b.lower() for b in bait ]
@@ -100,23 +110,36 @@ def lookup( request ):
         for ifn in ifilenames :
             with open('/mnt/msrepo/ifiles/' + ifn) as ifile :
                 for linel in tabulate(ifile) :
-                    if linel[0].startswith('#') :
+                    if linel[0].startswith('#') or linel[0].startswith('ID'):
                         continue ;
-                    elif linel[2].lower() == symbol.lower(): 
+                    #elif linel[2].lower() == symbol.lower():
+                    elif re.search( sym_re, linel[2].lower()) :
+                        if linel[2] == 'PSEUDO':
+                            continue
                         sig     = float(linel[3])
-                        sc      = int( linel[9].split('_')[4])
-                        length  = float( linel[9].split('_')[2])
-                        siglist.append([ ifn, sig, sc, length ])
-                        break
+                        sc      = int( re.sub(r'.*raw_(\d+)$', r'\1', linel[9] ))
+                        length  = float( re.sub(r'.*_len_([\d\.]+)_raw.*', r'\1', linel[9] ))
+                        prey    = linel[2]
+                        siglist.append([ ifn, prey, sig, sc, length ])
+                        if not use_regex:
+                            # if we are not using regex, don't allow multiple hits in same dataset
+                            break
+            if limit_to_one_dataset:
+                bait = ['__limited to__:' + ifn]
+                break
+                                    
                     
-        siglist = sorted( siglist, key=lambda x: x[1], reverse = True )
+        siglist = sorted( siglist, key=lambda x: x[2], reverse = True )
         
         for i in range(0,len(siglist)) :
-            result.append( [ siglist[i][0], '(rank ' + str(i+1) + '/' + str(len(siglist)) + ' appearances)', '[{: <4.2E}]'.format( siglist[i][1]), siglist[i][2], siglist[i][3] ] )
+            result.append( [ siglist[i][0], siglist[i][1], '(rank ' + str(i+1) + '/' + str(len(siglist)) + ' appearances)', '[{: <4.2E}]'.format( siglist[i][2]), siglist[i][3], siglist[i][4] ] )
             
     eform  = fs.lookupForm( initial={'org': 'all', 'bait': 'all'} )
-        
-    return render( request, 'network/lookup.html', { 'form' : eform, 'choices': result, 'symbol': symbol, 'bait': bait, 'org': orgDict[org] })
+
+    if org in orgDict:
+        org = orgDict[ org ]    
+
+    return render( request, 'network/lookup.html', { 'form' : eform, 'choices': result, 'symbol': symbol, 'bait': bait, 'org': org })
 
 @login_required()
 def lookupPTM( request ):
@@ -161,7 +184,7 @@ def lookupPTM( request ):
 
         for d in to_search:
             try:
-                dfilenames.append([ ptm_dir + d + '/' + f for f in os.listdir(ptm_dir + d) if re.search(r'.*mods_summary_data.tsv', f)][0])
+                dfilenames.append([ ptm_dir + d + '/' + f for f in os.listdir(ptm_dir + d) if re.search(r'^[a-zA-Z0-9].*mods_summary_data.tsv', f)][0])
             except IndexError:
                 continue
 
@@ -192,6 +215,9 @@ def lookupPTM( request ):
         result  = siglist
             
     eform  = fs.lookupPtmForm( initial={'org': 'all', 'bait': 'all', 'expt': 'all', 'modif': 'Phosphorylation'} )
+
+    if org in orgDict:
+        org = orgDict[ org ]
         
-    return render( request, 'network/lookupPTM.html', { 'form' : eform, 'choices': result, 'symbol': symbol, 'bait': bait, 'org': orgDict[org], 'expt': expt, 'mods': modification })
+    return render( request, 'network/lookupPTM.html', { 'form' : eform, 'choices': result, 'symbol': symbol, 'bait': bait, 'org': org, 'expt': expt, 'mods': modification })
 
