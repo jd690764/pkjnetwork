@@ -90,7 +90,7 @@ def lookup( request ):
         use_regex  = True if re.search(r'\*', symbol) else False
         limit_to_one_dataset = False
         if re.search(r'.*\*.*', symbol):
-            if re.search( r'^\*$', symbol):
+            if re.search( r'^\*$', symbol) and 'all' in bait:
                 limit_to_one_dataset = True
 
             symbol = symbol.lower()
