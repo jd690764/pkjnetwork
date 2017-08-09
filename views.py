@@ -19,6 +19,7 @@ from lib.markutils import tabulate
 from numpy import percentile, unique
 import lib.forms as fs
 from network.models import Sample
+import pickle
 
 import logging
 logger = logging.getLogger('django')
@@ -95,9 +96,26 @@ def lookup( request ):
 
             sym_re = re.compile( '^' + re.sub(r'\*', r'.*', symbol), re.I )
         else:
-            sym_re = re.compile( '^' + symbol, re.I )    
+            if org == 'all':
+                # we want to lookup mouse/human ortholog and search with both
+                h2m = pickle.load(open(cf.filesDict['h2ms'], 'rb'))
+                m2h = pickle.load(open(cf.filesDict['m2hs'], 'rb'))
+                symbol_h = ''
+                symbol_m = ''
+                if symbol in h2m:
+                    symbol_h = symbol
+                    symbol_m = '|'.join(h2m[symbol])
+                elif symbol in m2h:
+                    symbol_m = symbol
+                    symbol_h = '|'.join(m2h[symbol])
+
+                if len(symbol_h) > 0 and len(symbol_m) > 0:
+                    sym_re = re.compile( '^(' + symbol_h + '|' + symbol_m + ')', re.I )
+                    symbol = 'Human: ' + symbol_h + ' -- Mouse: ' + symbol_m
+                    use_regex = True
+            #sym_re = re.compile( '^' + symbol, re.I )    
     
-        ifilenames = [fn for fn in os.listdir('/mnt/msrepo/ifiles') if fn[-2:] == '.i' and not 'bioplex' in fn and fn[0] != '.' ]
+        ifilenames = [fn for fn in os.listdir(cf.ifilesPath) if fn[-2:] == '.i' and not 'bioplex' in fn and fn[0] != '.' ]
         baitl      = [ b.lower() for b in bait ]
         
         if not 'all' in bait:
@@ -107,7 +125,7 @@ def lookup( request ):
             ifilenames = [fn for fn in ifilenames if fn.split('_')[1] in org]
         
         for ifn in ifilenames :
-            with open('/mnt/msrepo/ifiles/' + ifn) as ifile :
+            with open(cf.ifilesPath + ifn) as ifile :
                 for linel in tabulate(ifile) :
                     if linel[0].startswith('#') or linel[0].startswith('ID'):
                         continue ;
@@ -165,7 +183,7 @@ def lookupPTM( request ):
         modification = request.POST['modif']
         siglist      = list()
         dfilenames   = list()
-        ptm_dir      = '/mnt/msrepo/fractionFiles/PTMs/'
+        ptm_dir      = cf.ptmsPath
         
         dirs       = [ x for x in os.listdir(ptm_dir)]
 
