@@ -93,10 +93,9 @@ def lookup( request ):
             if re.search( r'^\*$', symbol) and 'all' in bait:
                 limit_to_one_dataset = True
 
-            symbol = symbol.lower()
-            sym_re = re.compile( '^' + re.sub(r'\*', r'.*', symbol) )
+            sym_re = re.compile( '^' + re.sub(r'\*', r'.*', symbol), re.I )
         else:
-            sym_re = re.compile( '^' + symbol )    
+            sym_re = re.compile( '^' + symbol, re.I )    
     
         ifilenames = [fn for fn in os.listdir('/mnt/msrepo/ifiles') if fn[-2:] == '.i' and not 'bioplex' in fn and fn[0] != '.' ]
         baitl      = [ b.lower() for b in bait ]
@@ -112,8 +111,16 @@ def lookup( request ):
                 for linel in tabulate(ifile) :
                     if linel[0].startswith('#') or linel[0].startswith('ID'):
                         continue ;
-                    #elif linel[2].lower() == symbol.lower():
-                    elif re.search( sym_re, linel[2].lower()) :
+                    elif not use_regex and linel[2].lower() == symbol.lower():
+                        sig     = float(linel[3])
+                        sc      = int( re.sub(r'.*raw_(\d+)$', r'\1', linel[9] ))
+                        length  = float( re.sub(r'.*_len_([\d\.]+)_raw.*', r'\1', linel[9] ))
+                        prey    = linel[2]
+                        siglist.append([ ifn, prey, sig, sc, length ])
+                        # if we are not using regex, don't allow multiple hits in same dataset
+                        break
+                    
+                    elif re.search( sym_re, linel[2] ) :
                         if linel[2] == 'PSEUDO':
                             continue
                         sig     = float(linel[3])
@@ -121,9 +128,7 @@ def lookup( request ):
                         length  = float( re.sub(r'.*_len_([\d\.]+)_raw.*', r'\1', linel[9] ))
                         prey    = linel[2]
                         siglist.append([ ifn, prey, sig, sc, length ])
-                        if not use_regex:
-                            # if we are not using regex, don't allow multiple hits in same dataset
-                            break
+
             if limit_to_one_dataset:
                 bait = ['__limited to__:' + ifn]
                 break
