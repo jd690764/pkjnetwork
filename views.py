@@ -102,12 +102,13 @@ def lookup( request ):
                 m2h = pickle.load(open(cf.filesDict['m2hs'], 'rb'))
                 symbol_h = ''
                 symbol_m = ''
-                if symbol in h2m:
-                    symbol_h = symbol
-                    symbol_m = '|'.join(h2m[symbol])
-                elif symbol in m2h:
-                    symbol_m = symbol
-                    symbol_h = '|'.join(m2h[symbol])
+                symbol_lower = symbol.lower()
+                if symbol_lower in h2m:
+                    symbol_h = h2m[symbol_lower][0]
+                    symbol_m = '|'.join(h2m[symbol_lower][1])
+                elif symbol_lower in m2h:
+                    symbol_m = m2h[symbol_lower][0]
+                    symbol_h = '|'.join(m2h[symbol_lower][1])
 
                 if len(symbol_h) > 0 and len(symbol_m) > 0:
                     sym_re = re.compile( '^(' + symbol_h + '|' + symbol_m + ')', re.I )
