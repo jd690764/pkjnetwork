@@ -153,10 +153,10 @@ class Command(BaseCommand):
             if eid1 in edict and eid2 in edict:
                 if eid1 in d:
                     d[ eid1 ] |= {eid2}
-                    d_symb[ edict[eid1]] |= {edict[eid2]}
+                    d_symb[ edict[eid1].lower() ][1] |= {edict[eid2]}
                 else:
                     d[ eid1 ]  = { eid2 }
-                    d_symb[ edict[eid1]] = {edict[eid2]}
+                    d_symb[ edict[eid1].lower() ]  = [ edict[eid1], {edict[eid2]}]
                     
         pickle.dump( d, open( path2+f, 'wb' ))
         pickle.dump( d_symb, open( path2+fs, 'wb' ))
@@ -165,7 +165,7 @@ class Command(BaseCommand):
                 fh.write( eid1 + '\t' + str(','.join(d[eid1])) + '\n' ) 
         with open( path2+fs+'.tsv', 'wt' ) as fh:
             for s1 in d_symb:
-                fh.write( s1 + '\t' + str(','.join(d_symb[s1])) + '\n' ) 
+                fh.write( s1 + '\t' + d_symb[s1][0] + '\t' + str(','.join(d_symb[s1][1])) + '\n' ) 
 
                 
     def handle(self, *args, **options):
