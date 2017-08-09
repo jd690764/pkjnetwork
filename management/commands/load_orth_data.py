@@ -26,7 +26,9 @@ files = [ 'ftp://ftp.ncbi.nih.gov/pub/HomoloGene/current/homologene.data',
           path+'h2m_ens_latest.txt',
           path+'m2h_ens_latest.txt',
           path2+'h2m_ens_latest', # ens pickle file
-          path2+'m2h_ens_latest' # ens pickle file
+          path2+'m2h_ens_latest', # ens pickle file
+          'h2m_symb_latest',
+          'm2h_symb_latest',
 ]
 
 def form_query( taxid1, taxid2):
@@ -64,6 +66,23 @@ class Command(BaseCommand):
     args = '<foo bar ...>'
     help = 'our help string comes here'
     
+    def add_arguments(self, parser):
+        # Named (optional) arguments
+        parser.add_argument(
+            '--reload',
+            action  = 'store_true',
+            dest    = 'reload',
+            default = False,
+            help    = 'Reload table and do nothing else',
+        )
+        parser.add_argument(
+            '--reparse',
+            action  = 'store_true',
+            dest    = 'reparse',
+            default = False,
+            help    = 'Reparse previously downloaded data and reload table',
+        )
+
     def _download_homology_data( self ):
 
         downloadFromUrl( files[0], files[1] )
@@ -104,7 +123,7 @@ class Command(BaseCommand):
                                                 fields[3], str(fields[4]) ]))
 
 
-    def _make_pickle( self, taxid1, taxid2, f, stype ):
+    def _make_pickle( self, taxid1, taxid2, f, fs, stype ):
 
         cursor       = connection.cursor()
         str_hg       = form_query( taxid1, taxid2 )
@@ -120,32 +139,51 @@ class Command(BaseCommand):
         cursor.execute( strg )
         data         = cursor.fetchall()
         d            = dict()
-
-        q            = "select eid, genetype from entrez where genetype = 'protein-coding'"
+        d_symb       = dict()
+        
+        q            = "select eid, symbol from entrez where genetype = 'protein-coding'"
         cursor.execute( q )
         entrez       = cursor.fetchall()
         cursor.close()
         edict        = {}
-        for e, t in entrez:
-            edict[str(e)] = str(t)
+        for e, s in entrez:
+            edict[str(e)] = str(s)
         
-        for heid, meid in data:
-            if heid in edict and meid in edict:
-                if heid in d:
-                    d[ heid ] |= {meid}
+        for eid1, eid2 in data:
+            if eid1 in edict and eid2 in edict:
+                if eid1 in d:
+                    d[ eid1 ] |= {eid2}
+                    d_symb[ edict[eid1]] |= {edict[eid2]}
                 else:
-                    d[ heid ]  = { meid }
-
+                    d[ eid1 ]  = { eid2 }
+                    d_symb[ edict[eid1]] = {edict[eid2]}
+                    
         pickle.dump( d, open( path2+f, 'wb' ))
+        pickle.dump( d_symb, open( path2+fs, 'wb' ))
         with open( path2+f+'.tsv', 'wt' ) as fh:
             for eid1 in d:
                 fh.write( eid1 + '\t' + str(','.join(d[eid1])) + '\n' ) 
-            
+        with open( path2+fs+'.tsv', 'wt' ) as fh:
+            for s1 in d_symb:
+                fh.write( s1 + '\t' + str(','.join(d_symb[s1])) + '\n' ) 
+
+                
     def handle(self, *args, **options):
         print( '\n\n\n\n############################ ' + 'update Orthology data on ' + str(datetime.date.today()))
-        self._download_homology_data()
-        self._parse_ens_file( files[4], files[6], 9606, 10090 )
-        self._parse_ens_file( files[5], files[7], 10090, 9606 )
-        self._load_dbtable()
-        self._make_pickle( 9606, 10090, files[2], 'all' )
-        self._make_pickle( 10090, 9606, files[3], 'all' )
+        if options[ 'reload' ]:
+            self._load_dbtable()
+            self._make_pickle( 9606, 10090, files[2], files[10], 'all' )
+            self._make_pickle( 10090, 9606, files[3], files[11], 'all' )
+        elif options[ 'reparse' ]:       
+            self._parse_ens_file( files[4], files[6], 9606, 10090 )
+            self._parse_ens_file( files[5], files[7], 10090, 9606 )
+            self._load_dbtable()
+            self._make_pickle( 9606, 10090, files[2], files[10], 'all' )
+            self._make_pickle( 10090, 9606, files[3], files[11], 'all' )
+        else:            
+            self._download_homology_data()
+            self._parse_ens_file( files[4], files[6], 9606, 10090 )
+            self._parse_ens_file( files[5], files[7], 10090, 9606 )
+            self._load_dbtable()
+            self._make_pickle( 9606, 10090, files[2], files[10], 'all' )
+            self._make_pickle( 10090, 9606, files[3], files[11], 'all' )
