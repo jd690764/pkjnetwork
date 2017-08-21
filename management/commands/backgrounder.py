@@ -1,13 +1,15 @@
 from django.core.management.base import BaseCommand
 from django.db import connection
 
-from network.models import Preprocess
+from network.models import Preprocess, Sample
 
 import lib.interactors as I
 import lib.MSpreprocess as ms
 from lib.markutils import *
 from lib import config as cf
 import pandas as pd
+import subprocess as sp
+import os
 
 mrmspath      = cf.mrmsfilesPath
 rawpath       = cf.rawfilesPath
@@ -43,7 +45,9 @@ class Command(BaseCommand):
 
         row     = Preprocess.objects.get( pk = uid )
         baitsym = b4us(row.bait_symbol_eid)
-        self._process_dataset( row.rawfile, row.parser.upper(), baitsym, str(row.taxid), row.special, row.bgfile, row.mrmsfile )        
+        print(row.sampleid)
+        sample  = Sample.objects.get( pk = int(row.sampleid) )
+        self._process_dataset( row.rawfile, row.parser.upper(), baitsym, str(row.taxid), row.special, row.bgfile, row.mrmsfile, sample.id )        
     
     def _process_byfile( self ):
 
@@ -71,47 +75,78 @@ class Command(BaseCommand):
             else :
                 mrmsfile    = ''
                 
-            self._process_dataset( infilename, parser.upper(), baitsym, str(org), special, bgfilename, mrmsfile )
+            self._process_dataset( infilename, parser.upper(), baitsym, str(org), special, bgfilename, mrmsfile, -1 )
 
 
-    def _process_dataset( self, infilename, parser, baitsym, org, special, bgfilename, mrmsfile ):
+    def _process_dataset( self, infilename, parser, baitsym, org, special, bgfilename, mrmsfile, sid ):
 
         if special and special[0] == '*' : 
-            outfname_pfx   =    special[1:]+date6()
+            outfname_pfx   =    special[1:]
         elif special : 
-            outfname_pfx   =    baitsym+'_'+str(org)+'_'+special+'_'+date6() 
+            outfname_pfx   =    baitsym+'_'+str(org)+'_'+special+'_'
         else : 
-            outfname_pfx   =    baitsym+'_'+str(org)+'_'+date6() 
+            outfname_pfx   =    baitsym+'_'+str(org)+'_' 
             
-        outfname = ipath + outfname_pfx + '.i'
+        outfname = ipath + outfname_pfx + date6() + '.i'
 
         sys.stdout.write(outfname+'\n') 
-        
-        if 'mrms' in infilename : 
+
+        if os.path.isfile( mrmspath + mrmsfile ):
+            infile = open( mrmspath + mrmsfile )
+        elif not infilename == None and 'mrms' in infilename :
             infile = open( mrmspath + infilename ) 
-        elif 'xml' in infilename : 
+        elif 'xml' in infilename :
             infile = open( rawpath + infilename, 'rb' )
         elif '.xlsx' in infilename and parser == 'SUMS':
             mrmsfile = mrmsfile if mrmsfile else re.sub( '^(.+)\.xlsx', '\1', infilename ) + '.mrms'
-            exptdata = pd.read_excel( rawpath + infilename, sheetname = "GLOBAL" )
-            exptdata.to_csv( mrmspath + mrmsfile, sep = "\t", na_rep = 'NaN', index = False )
+            if not os.path.isfile( mrmspath + mrmsfile ):
+                exfile   = pd.ExcelFile( rawpath + infilename )
+                if 'GLOBAL' in exfile.sheet_names:
+                    sheet = 'GLOBAL'
+                elif 'Global Percentile' in exfile.sheet_names:
+                    sheet = 'Global Percentile'
+                elif 'tableformat.csv' in exfile.sheet_names:
+                    sheet = 'tableformat.csv'
+                    
+                exptdata = exfile.parse( sheet )
+                #exptdata = pd.read_excel( rawpath + infilename, sheetname = "Global Percentile" )
+                exptdata.to_csv( mrmspath + mrmsfile, sep = "\t", na_rep = 'NaN', index = False )
             infile = open( mrmspath + mrmsfile )
         elif '.xls' in infilename and parser == 'LANEEXCEL':
             mrmsfile = mrmsfile if mrmsfile else re.sub( '^(.+)\.xlsx', '\1', infilename ) + '.mrms'
-            exptdata = pd.read_excel( rawpath + infilename, sheetname = "PeptideCountHeatMap" )
-            exptdata.to_csv( mrmspath + mrmsfile, sep = "\t", na_rep = 'NaN', index = False )
-            infile = open( mrmspath + mrmsfile )                
+            if not os.path.isfile( mrmspath + mrmsfile ):
+                exptdata = pd.read_excel( rawpath + infilename, sheetname = "PeptideCountHeatMap" )
+                exptdata.to_csv( mrmspath + mrmsfile, sep = "\t", na_rep = 'NaN', index = False )
+            infile = open( mrmspath + mrmsfile )
         else : 
-            raise TypeError  
+            raise TypeError
 
-        print( 'infile=' + infilename )
-        print( 'baitsym=' + baitsym )
+        print('done here')
+        # get coverage data file
+        covfile = None
+        if sid > 0:
+            sample  = Sample.objects.get( pk = sid )
+            if sample.ff_folder == None or sample.ff_folder == '':
+                print( 'no ff_folder for sampleid=' + str(sid) ) 
+            else:
+                print(os.path.join(cf.ptmsPath, sample.ff_folder, sample.ff_folder + '_cov_summary.tsv'))
+                if os.path.isfile(os.path.join(cf.ptmsPath, sample.ff_folder, sample.ff_folder + '_cov_summary.tsv')):
+                    covfile = os.path.join(cf.ptmsPath, sample.ff_folder, sample.ff_folder + '_cov_summary.tsv')
+                else:
+                    # if this file dosn't exist, we need to run the modifs.R script now
+                    sp.call(['Rscript', '/usr/local/share/R/modifs.R', '-u', str(sid)])
+                    if os.path.isfile(os.path.join(cf.ptmsPath, sample.ff_folder, sample.ff_folder + '_cov_summary.tsv')):
+                        covfile = os.path.join(cf.ptmsPath, sample.ff_folder, sample.ff_folder + '_cov_summary.tsv')
+
+        print( 'infile=' + str(infilename) )
+        print( 'baitsym=' + str(baitsym) )
         print( 'org=' + str(org) )
-        print( 'special=' + special )
-        print( 'bgfile=' + bgfilename )
-        print( 'mrmsfile=' + mrmsfile )
+        print( 'special=' + str(special) )
+        print( 'bgfile=' + str(bgfilename) )
+        print( 'mrmsfile=' + str(mrmsfile) )
+        print( 'covfile=' + str(covfile) )
         
-        dataset = ms.MSdata( outfname_pfx )
+        dataset = ms.MSdata( outfname_pfx + date6() )
 
         if parser == 'SUMS' :
             dataset.parseSUMS(infile) 
@@ -129,8 +164,12 @@ class Command(BaseCommand):
             dataset.set_background( bgpath + bgfilename, bestpepdb = pepDict[ org ] ) 
 
         dataset.setBait(baitsym)
-        dataset.score() 
-        dataset.save(outfname)
+        dataset.score()
+        # if there are older version of this file move them into a separate folder
+        prev_file = [f for f in os.listdir(ipath) if re.search(outfname_pfx + '\d+\.i$', f)]
+        for pf in prev_file:
+            sp.call(['mv', ipath + pf, ipath + 'old/' + pf])
+        dataset.save(outfname, covfile = covfile)
 
     def handle(self, *args, **options):
         print( options )
