@@ -124,29 +124,31 @@ def lookup( request ):
         
         if not org == 'all':
             ifilenames = [fn for fn in ifilenames if fn.split('_')[1] in org]
-        
+
+        def rowData( ifn, l ):
+            sig     = float(l[3])
+            sc      = int( re.sub(r'.*_raw_(\d+)(_.+|$)', r'\1', l[9] ))
+            length  = round(float( re.sub(r'.*_len_([\d\.]+)_.*', r'\1', l[9] )), 2)
+            cov     = float( re.sub(r'.*_cov_([\d\.\-]+)_.*', r'\1', l[9] )) if re.search(r'_cov_', l[9] ) else -1
+            upept   = int( re.sub(r'.*upept_([\d\-]+)$', r'\1', l[9] )) if re.search(r'_upept_', l[9] ) else -1
+            prey    = l[2]
+            return( ifn, prey, sig, sc, length, cov, upept )
+            
         for ifn in ifilenames :
             with open(cf.ifilesPath + ifn) as ifile :
                 for linel in tabulate(ifile) :
                     if linel[0].startswith('#') or linel[0].startswith('ID'):
                         continue ;
                     elif not use_regex and linel[2].lower() == symbol.lower():
-                        sig     = float(linel[3])
-                        sc      = int( re.sub(r'.*raw_(\d+)$', r'\1', linel[9] ))
-                        length  = float( re.sub(r'.*_len_([\d\.]+)_raw.*', r'\1', linel[9] ))
-                        prey    = linel[2]
-                        siglist.append([ ifn, prey, sig, sc, length ])
+                        siglist.append( list(rowData(ifn, linel)))
                         # if we are not using regex, don't allow multiple hits in same dataset
                         break
                     
-                    elif re.search( sym_re, linel[2] ) :
+                    elif use_regex and re.search( sym_re, linel[2] ) :
                         if linel[2] == 'PSEUDO':
                             continue
-                        sig     = float(linel[3])
-                        sc      = int( re.sub(r'.*raw_(\d+)$', r'\1', linel[9] ))
-                        length  = float( re.sub(r'.*_len_([\d\.]+)_raw.*', r'\1', linel[9] ))
-                        prey    = linel[2]
-                        siglist.append([ ifn, prey, sig, sc, length ])
+
+                        siglist.append( list(rowData(ifn, linel)))
 
             if limit_to_one_dataset:
                 bait = ['__limited to__:' + ifn]
@@ -156,7 +158,7 @@ def lookup( request ):
         siglist = sorted( siglist, key=lambda x: x[2], reverse = True )
         
         for i in range(0,len(siglist)) :
-            result.append( [ siglist[i][0], siglist[i][1], '(rank ' + str(i+1) + '/' + str(len(siglist)) + ' appearances)', '[{: <4.2E}]'.format( siglist[i][2]), siglist[i][3], siglist[i][4] ] )
+            result.append( [ siglist[i][0], siglist[i][1], '(rank ' + str(i+1) + '/' + str(len(siglist)) + ' appearances)', '{: <4.2E}'.format( siglist[i][2]), siglist[i][3], siglist[i][4], siglist[i][5], siglist[i][6] ] )
             
     eform  = fs.lookupForm( initial={'org': 'all', 'bait': 'all'} )
 
@@ -221,7 +223,6 @@ def lookupPTM( request ):
                 for line in dfile:
                 #for linel in tabulate(dfile) :
                     linel         = line.strip().split('\t')
-                    print(linel[1] + '  ' + linel[3])
                     if linel[0].startswith('#') :
                         continue ;
                     elif linel[1].lower() == symbol.lower() and linel[3] == modification: 
