@@ -45,7 +45,6 @@ class Command(BaseCommand):
 
         row     = Preprocess.objects.get( pk = uid )
         baitsym = b4us(row.bait_symbol_eid)
-        print(row.sampleid)
         sample  = Sample.objects.get( pk = int(row.sampleid) )
         self._process_dataset( row.rawfile, row.parser.upper(), baitsym, str(row.taxid), row.special, row.bgfile, row.mrmsfile, sample.id )        
     
@@ -57,8 +56,6 @@ class Command(BaseCommand):
                 continue 
 
             linel           = line.rstrip().lstrip().split('\t')
-            print( 'line=' + str(linel) )
-
             infilename      = linel[0] 
             baitsym         = b4us(linel[1]) 
             org             = linel[2]
@@ -121,7 +118,6 @@ class Command(BaseCommand):
         else : 
             raise TypeError
 
-        print('done here')
         # get coverage data file
         covfile = None
         if sid > 0:
