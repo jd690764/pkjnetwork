@@ -449,7 +449,9 @@ class Preprocess(models.Model):
                                blank=True, null=True)
     pjx = models.CharField( max_length = 20,
                             help_text = 'A PJXnnn id, that identifies the experiment.' )
-
+    sampleid = models.IntegerField( help_text = 'This is the primary key value of the sample table. No foreign key relationship.',
+                                    blank = True, null = True )
+    
                     
 class ProfBcs(models.Model):
     barcode_id = models.IntegerField()
