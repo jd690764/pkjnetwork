@@ -13,12 +13,35 @@ class HgncAdmin(admin.ModelAdmin):
     list_display = ('hgnc_id', 'symbol', 'hgnc_name', 'entrez_id')
 
 admin.site.register(Hgnc, HgncAdmin)    
-    
+def duplicate_record( modeladmin, request, queryset ):
+    for object in queryset:
+        object.id = None
+        object.save()
+
+duplicate_record.short_description = 'Duplicate selected record(s)'
+
+def preprocess_from_sample( modeladmin, request, queryset ):
+    for object in queryset:
+        pp = Preprocess(rawfile = object.rawfile)
+        pp.bait_symbol_eid = object.bait_symbol + '_' + str(object.eid)
+        pp.taxid = object.taxid
+        pp.parser = object.facility
+        pp.bgfile = object.bgfile
+        pp.mrmsfile = object.mrmsfile
+        pp.pjx = object.uid
+        pp.sampleid = object.id
+        pp.save()
+
+preprocess_from_sample.short_description = 'Create Preprocess record from Sample(s)'
+        
 @admin.register(Sample)
 class SampleAdmin(admin.ModelAdmin):
     list_display = ('id', 'uid', 'label', 'cell_line', 'cond', 'variant', 'tag', 'tag_length', 'facility', 'bait_symbol', 'eid', 'rawfile',
-                    'bgfile','mrmsfile', 'lab', 'exptype', 'note', 'ff_folder', 'box_folder', 'date_back', 'taxid', 'discard')
+                    'bgfile','mrmsfile', 'lab', 'exptype', 'note', 'ff_folder', 'box_folder', 'date_back', 'taxid', 'discard', 'display')
     list_filter = (('lab', DropdownFilter), ('facility', DropdownFilter), ('bait_symbol', DropdownFilter), ('uid', DropdownFilter))
+
+    actions = [duplicate_record, preprocess_from_sample]
+    
     def formfield_for_dbfield(self, db_field, **kwargs):
         field =  super(SampleAdmin, self).formfield_for_dbfield(db_field, **kwargs)
         if db_field.name == 'facility':
@@ -45,9 +68,11 @@ class SampleAdmin(admin.ModelAdmin):
 @admin.register(Preprocess)
 class PreprocessAdmin(admin.ModelAdmin):
     list_display = ('id', 'rawfile', 'bait_symbol_eid', 'taxid', 'special', 'parser', 
-                    'bgfile','mrmsfile', 'comment', 'pjx' )
+                    'bgfile','mrmsfile', 'comment', 'pjx', 'sampleid' )
     list_filter  = (('bait_symbol_eid', DropdownFilter), ('parser', DropdownFilter))
 
+    actions = [duplicate_record]
+    
     def formfield_for_dbfield(self, db_field, **kwargs):
         field =  super(PreprocessAdmin, self).formfield_for_dbfield(db_field, **kwargs)
         if db_field.name == 'parser':
