@@ -81,17 +81,19 @@ def lookup( request ):
     org        = None
     bait       = None
     symbol     = None
+    expt       = None
     
     if request.method == 'POST':
 
         org        = request.POST['org']
         bait       = request.POST.getlist('bait')
         symbol     = request.POST['symbol']
+        expt       = request.POST['expt']
         siglist    = list()
         use_regex  = True if re.search(r'\*', symbol) else False
         limit_to_one_dataset = False
         if re.search(r'.*\*.*', symbol):
-            if re.search( r'^\*$', symbol) and 'all' in bait:
+            if re.search( r'^\*$', symbol) and 'all' in bait and expt == 'select one':
                 limit_to_one_dataset = True
 
             sym_re = re.compile( '^' + re.sub(r'\*', r'.*', symbol), re.I )
@@ -125,6 +127,9 @@ def lookup( request ):
         if not org == 'all':
             ifilenames = [fn for fn in ifilenames if fn.split('_')[1] in org]
 
+        if not expt == 'select one':
+            ifilenames = [fn for fn in ifilenames if expt in fn] 
+            
         def rowData( ifn, l ):
             sig     = float(l[3])
             sc      = int( re.sub(r'.*_raw_(\d+)(_.+|$)', r'\1', l[9] ))
@@ -160,12 +165,12 @@ def lookup( request ):
         for i in range(0,len(siglist)) :
             result.append( [ siglist[i][0], siglist[i][1], '(rank ' + str(i+1) + '/' + str(len(siglist)) + ' appearances)', '{: <4.2E}'.format( siglist[i][2]), siglist[i][3], siglist[i][4], siglist[i][5], siglist[i][6] ] )
             
-    eform  = fs.lookupForm( initial={'org': 'all', 'bait': 'all'} )
+    eform  = fs.lookupForm( initial={'org': 'all', 'bait': 'all', 'expt': 'select one'} )
 
     if org in orgDict:
         org = orgDict[ org ]    
 
-    return render( request, 'network/lookup.html', { 'form' : eform, 'choices': result, 'symbol': symbol, 'bait': bait, 'org': org })
+    return render( request, 'network/lookup.html', { 'form' : eform, 'choices': result, 'symbol': symbol, 'bait': bait, 'org': org, 'expt': expt })
 
 @login_required()
 def lookupPTM( request ):
@@ -193,6 +198,7 @@ def lookupPTM( request ):
         baitl      = [ b.lower() for b in bait ]
 
         query      = Sample.objects.all()
+        #query      = Sample.objects.filter(discard = False, display = True, ff_folder__isnull = False).values('uid').annotate(id = Max(id))
         
         if not 'all' in bait:
             query  = query.filter(bait_symbol__in=bait)
@@ -225,13 +231,15 @@ def lookupPTM( request ):
                     linel         = line.strip().split('\t')
                     if linel[0].startswith('#') :
                         continue ;
+                    elif linel[0] == 'dset':
+                        header    = {k: v for v, k in enumerate(linel)}
                     elif linel[1].lower() == symbol.lower() and linel[3] == modification: 
-                        dset      = linel[0]
-                        descr     = linel[2]
-                        resid     = linel[5]
-                        pos       = int(linel[4])
-                        mod_count = float( linel[6] )
-                        all_count = float( linel[7] )
+                        dset      = linel[header['dset']]
+                        descr     = linel[header['descr']]
+                        resid     = linel[header['residue']]
+                        pos       = int(linel[header['pos']])
+                        mod_count = float( linel[header['mod_count']] )
+                        all_count = float( linel[header['all_count']] )
                         print( dset + '+' + descr + '+' + resid + '+' + str(pos) + '+' + str(mod_count) + '+' + str(all_count))
                         siglist.append([ labels[dset], descr, resid, pos, mod_count, all_count, '{0:.2f}'.format(100 * mod_count/all_count) ])
                         #break
