@@ -539,8 +539,8 @@ class Sample(models.Model):
                            choices=(('jackson', 'Jackson lab'), ('jackson/sage', 'Jackson/Sage labs'), ('sage', 'Sage lab'), ('attardi', 'Attardi lab'),
                                     ('fire', 'Fire lab'), ('einav', 'Einav lab'), ('carette', 'Carette lab'),
                                     ('gleeson', 'Gleeson lab'), ('arvin', 'Arvin lab'), ('bogyo', 'Bogyo lab'), ('cleary', 'Cleary lab'),
-                                    ('cimprich', 'Cimprich lab'), ('lewis', 'Lewis lab'), ('chen', 'Chen lab'),
-                                    ('sweet-cordero', 'Sweet-Cordero lab'), ('greenberg', 'Greenberg lab'), ('wernig', 'Wernig lab')),
+                                    ('cimprich', 'Cimprich lab'), ('lewis', 'Lewis lab'), ('chen', 'Chen lab'), ('poirier', 'Poirier lab'),
+                                    ('sweet-cordero', 'Sweet-Cordero lab'), ('greenberg', 'Greenberg lab'), ('weis', 'Weis lab'), ('wernig', 'Wernig lab')),
                            default='jackson',
                            help_text='Lab for which the experiment was conducted, e.g.:Jackson lab ')
     exptype = models.CharField(max_length=5,
@@ -566,6 +566,9 @@ class Sample(models.Model):
     discard = models.NullBooleanField(blank = True, null = True,
                                   help_text = 'Is this a bad experiment?',
                                   choices = ((True, 'discard'), (False, 'keep')))
+    display = models.NullBooleanField(blank = True, null = True,
+                                  help_text = 'Include this experiment in lookups?',
+                                  choices = ((True, 'display'), (False, 'hide')))
 
     
     def get_absolute_url(self):
