@@ -25,7 +25,8 @@ files = [ 'ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledge
           'uniprot_sprot_rodents.dat',
           'uniprot_trembl_human.dat',
           'uniprot_trembl_rodents.dat',
-          'uniprot_sprot.dat', ]
+          'uniprot_sprot.dat',
+          'uniprot_features.dat']
 
 xrefs = ['GeneID', 'Refseq', 'MGI', 'HGNC']
 xdoms = ['PROSITE', 'InterPro', 'CDD', 'SMART', 'Pfam', ]
@@ -62,7 +63,7 @@ class Command(BaseCommand):
         for i in range(5, 9):
             gunzip( path+files[i]+'.gz', path, files[i] )
                           
-    def _parse_downloaded_files( self ):
+    def _parse_xref_files( self ):
 
         with open( files[4], 'wt' ) as outf:
 
@@ -130,6 +131,9 @@ class Command(BaseCommand):
 
             print( 'maxeid: ' + str(maxeid) + '\nmaxrsid: ' + str(maxrsid) + '\nmaxomim: ' + str(maxomim) + '\nmaxpmid: ' + str(maxpmid) + '\nmaxensid: ' + str(maxensid) + '\nmaxenspid: ' + str(maxenspid) + '\n' )
 
+
+    def _parse_flat_files( self ):
+    
         print( 'uniprot flat files...' )
         with open( path + files[13], 'wt' ) as outf:
 
@@ -146,10 +150,10 @@ class Command(BaseCommand):
                             taxid = record.taxonomy_id[0]
                             seq   = record.sequence
                             sinfo = str(record.seqinfo[0])
-                            rname = '\N'
-                            fname = '\N'
-                            sname = '\N'
-                            flags = '\N'
+                            rname = ''
+                            fname = ''
+                            sname = ''
+                            flags = ''
                             if 'RecName' in record.description:
                                 rname = re.sub(r'.*RecName: *Full=([^;{]+)[{;].*', r'\1', record.description, re.IGNORECASE).strip()
                             elif 'SubName' in record.description:
@@ -182,7 +186,34 @@ class Command(BaseCommand):
                                     ddbs.append(record.cross_references[i][0])
                                     dnms.append(record.cross_references[i][2])
                             outf.write( '\t'.join([ acc, uid, taxid, rev, gname, rname, fname, sname, flags, '|'.join(accs), '|'.join(eids), '|'.join(refs), '|'.join(hgnc), '|'.join(mgis), '|'.join(ddbs), '|'.join(dids), '|'.join(dnms), sinfo, seq ]) + '\n' )          
-            
+
+    def _parse_features( self ):
+    
+        print( 'uniprot flat files...' )
+        with open( path + files[14], 'wt' ) as outf:
+
+            for j in [9,10,11,12]:
+                print( files[j] + '...' )
+                with open(path + files[j], 'rt') as handle:
+                    for record in SwissProt.parse(handle):
+                        if record.taxonomy_id[0] in ['9606', '10090']:
+                            accs  = record.accessions
+                            acc   = accs.pop(0)
+                            feats = record.features
+                            for f in feats:
+                                f = list(f)
+                                f.insert(3, '')                                
+                                if re.search(r'.*\.\s+\{', f[4]):
+                                    m = re.match(r'^(.+)\.\s*\{(.+)\}\.$', f[4])
+                                    if m:
+                                        f[3] = m.group(1)
+                                        f[4] = m.group(2)
+                                else :
+                                    f[4] = re.sub(r'[\{\}\.]', '', f[4]) 
+                                #print(f)
+                                outf.write( acc + "\t" + '\t'.join(map(str, f)) + '\n')
+     
+                            
     def _load_dbtable( self ):
 
         print( 'load data into uniprot table' )
@@ -214,10 +245,14 @@ class Command(BaseCommand):
             self._load_dbtable()
         elif options[ 'reparse' ]:
             print( 'reparse and load data.' )
-            self._parse_downloaded_files()
-            self._load_dbtable()
+            #self._parse_xref_files()
+            #self._parse_flat_files()
+            self._parse_features()
+            #self._load_dbtable()
         else:
             print( 'no argument - do whole process.' )
             self._download_from_uniprot()
-            self._parse_downloaded_files()
+            self._parse_xref_files()
+            self._parse_flat_files()
+            self._parse_features()            
             self._load_dbtable()
