@@ -46,7 +46,7 @@ class Command(BaseCommand):
             rsdict3[dic[ 'prot_acc' ]] = edict[ dic[ 'eid' ]][2]
             
         dup = pickle.load( open( filesDict['dup'], 'rb' ))
-        dup_df = pandas.DataFrame.from_dict(dup).T
+        dup_df = pandas.DataFrame.from_dict(dup, orient = 'index')
         # create column from row names
         dup_df.index.name = 'descr'
         dup_df.reset_index(inplace = True)
