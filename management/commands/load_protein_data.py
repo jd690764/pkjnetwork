@@ -6,7 +6,7 @@ from django.db import connection
 
 from lib import genehasher
 from lib.fileUtils import downloadFromUrl, gunzip
-from network.models import Ncbiprot
+from network.models import Ncbiprots
 
 import pickle
 import pprint
@@ -33,6 +33,23 @@ class Command(BaseCommand):
     args = '<foo bar ...>'
     help = 'our help string comes here'
 
+    def add_arguments(self, parser):
+        # Named (optional) arguments
+        parser.add_argument(
+            '--reload',
+            action  = 'store_true',
+            dest    = 'reload',
+            default = False,
+            help    = 'Reload table and do nothing else',
+        )
+        parser.add_argument(
+            '--reparse',
+            action  = 'store_true',
+            dest    = 'reparse',
+            default = False,
+            help    = 'Reparse previously downloaded data and reload table',
+        ) 
+
     def _download_from_ncbi( self ):
 
         for org, f in files.items():
@@ -43,17 +60,17 @@ class Command(BaseCommand):
     def _load_dbtable( self ):
 
         # load data into protein table
-        Ncbiprot.objects.all().delete()
+        Ncbiprots.objects.all().delete()
         with connection.cursor() as c:
             for org, f in files.items():
-                c.execute( 'LOAD DATA LOCAL INFILE %s REPLACE INTO TABLE tcga.ncbiprot FIELDS TERMINATED BY "\t" ignore 1 lines' + 
+                c.execute( 'LOAD DATA LOCAL INFILE %s REPLACE INTO TABLE tcga.ncbiprots FIELDS TERMINATED BY "\t" ignore 1 lines' + 
                            ' (ACC, CDS, PROTNAME, EID, GI, LEN, SEQ, SYMBOL, MRNA, TAXID)', [ f[3] ] )
 
     def _pickler( self ):
 
         for (org, f) in files.items():
 
-            pobj      = Ncbiprot.objects.filter( taxid = f[4] )
+            pobj      = Ncbiprots.objects.filter( taxid = f[4] )
 
             accs      = dict()
             gis       = dict()
@@ -117,7 +134,17 @@ class Command(BaseCommand):
         
     def handle(self, *args, **options):
         print( '\n\n\n\n############################ ' + 'update NCBI protein data on ' + str(datetime.date.today()))
-        self._download_from_ncbi()
-        self._parse_file()
-        self._load_dbtable()
-        self._pickler()
+        if options[ 'reload' ]:
+            print( 'reload data into dbase' )
+            self._load_dbtable()
+        elif options[ 'reparse' ]:
+            print( 'reparse data and load it into database' )
+            self._parse_file()
+            self._load_dbtable()
+            self._pickler()
+        else:
+            print( 'updating data' )
+            self._download_from_ncbi()
+            self._parse_file()
+            self._load_dbtable()
+            self._pickler()
