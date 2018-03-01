@@ -4,7 +4,7 @@ from os.path import isfile, join
 import gzip
 import re
 from lib.fileUtils import downloadFromUrl, gunzip
-from network.models import Uniprot, Updet
+from network.models import Uniprot, Updet, Upfeats
 from django.db import connection
 import subprocess
 import datetime
@@ -150,6 +150,9 @@ class Command(BaseCommand):
                             taxid = record.taxonomy_id[0]
                             seq   = record.sequence
                             sinfo = str(record.seqinfo[0])
+                            srcdb = 'sp'
+                            if j > 10:
+                                srcdb = 'tr'
                             rname = ''
                             fname = ''
                             sname = ''
@@ -185,7 +188,7 @@ class Command(BaseCommand):
                                     dids.append(record.cross_references[i][1])
                                     ddbs.append(record.cross_references[i][0])
                                     dnms.append(record.cross_references[i][2])
-                            outf.write( '\t'.join([ acc, uid, taxid, rev, gname, rname, fname, sname, flags, '|'.join(accs), '|'.join(eids), '|'.join(refs), '|'.join(hgnc), '|'.join(mgis), '|'.join(ddbs), '|'.join(dids), '|'.join(dnms), sinfo, seq ]) + '\n' )          
+                            outf.write( '\t'.join([ acc, uid, srcdb, taxid, rev, gname, rname, fname, sname, flags, '|'.join(accs), '|'.join(eids), '|'.join(refs), '|'.join(hgnc), '|'.join(mgis), '|'.join(ddbs), '|'.join(dids), '|'.join(dnms), sinfo, seq ]) + '\n' )          
 
     def _parse_features( self ):
     
@@ -235,7 +238,12 @@ class Command(BaseCommand):
         Updet.objects.all().delete()
         with connection.cursor() as c:
             c.execute( "LOAD DATA LOCAL INFILE %s REPLACE INTO TABLE tcga.updet FIELDS TERMINATED BY '\t' OPTIONALLY ENCLOSED BY '\"' " + 
-                       '(upacc, upid, taxid, status, gname, recname, fullname, shortname, flags, upaccs, eid, refseqid, hgncid, mgid, domaindb, domainid, domainname, seqinfo, seq)', [ path + files[13] ] )
+                       '(upacc, upid, srcdb, taxid, status, gname, recname, fullname, shortname, flags, upaccs, eid, refseqid, hgncid, mgid, domaindb, domainid, domainname, seqinfo, seq)', [ path + files[13] ] )
+        print( 'load data into upfeats table' )
+        Upfeats.objects.all().delete()
+        with connection.cursor() as c:
+            c.execute( "LOAD DATA LOCAL INFILE %s REPLACE INTO TABLE tcga.upfeats FIELDS TERMINATED BY '\t' " + 
+                       '(upacc, ftype, fstart, fstop, feature, source, extid)', [ path + files[14] ] )
             
         
     def handle(self, *args, **options):
@@ -245,10 +253,10 @@ class Command(BaseCommand):
             self._load_dbtable()
         elif options[ 'reparse' ]:
             print( 'reparse and load data.' )
-            #self._parse_xref_files()
-            #self._parse_flat_files()
+            self._parse_xref_files()
+            self._parse_flat_files()
             self._parse_features()
-            #self._load_dbtable()
+            self._load_dbtable()
         else:
             print( 'no argument - do whole process.' )
             self._download_from_uniprot()
