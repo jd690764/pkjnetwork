@@ -384,21 +384,21 @@ class Muts(models.Model):
         db_table = 'muts'
 
 
-class Ncbiprot(models.Model):
-    acc = models.CharField(db_column='ACC', max_length=20)  # Field name made lowercase.
+class Ncbiprots(models.Model):
+    acc = models.CharField(db_column='ACC', max_length=20, primary_key=True)  # Field name made lowercase.
+    gi = models.IntegerField(db_column='GI')  # Field name made lowercase.
+    taxid = models.IntegerField(db_column='TAXID')  # Field name made lowercase.
+    protname = models.CharField(db_column='PROTNAME', max_length=1000, blank=True, null=True)  # Field name made lowercase.    
     cds = models.CharField(db_column='CDS', max_length=200, blank=True, null=True)  # Field name made lowercase.
-    protname = models.CharField(db_column='PROTNAME', max_length=1000, blank=True, null=True)  # Field name made lowercase.
     eid = models.IntegerField(db_column='EID')  # Field name made lowercase.
-    gi = models.IntegerField(db_column='GI', primary_key=True)  # Field name made lowercase.
+    symbol = models.CharField(db_column='SYMBOL', max_length=50)  # Field name made lowercase.
+    mrna = models.CharField(db_column='MRNA', max_length=5000, blank=True, null=True)  # Field name made lowercase.
     len = models.IntegerField(db_column='LEN', blank=True, null=True)  # Field name made lowercase.
     seq = models.TextField(db_column='SEQ', blank=True, null=True)  # Field name made lowercase.
-    symbol = models.CharField(db_column='SYMBOL', max_length=50)  # Field name made lowercase.
-    taxid = models.IntegerField(db_column='TAXID')  # Field name made lowercase.
-    mrna = models.CharField(db_column='MRNA', max_length=5000, blank=True, null=True)  # Field name made lowercase.
     
     class Meta:
         managed = False
-        db_table = 'ncbiprot'
+        db_table = 'ncbiprots'
 
 
 class Numbers(models.Model):
@@ -600,6 +600,7 @@ class Uniprot(models.Model):
 class Updet(models.Model):
     upacc = models.CharField(primary_key=True, max_length=20)
     upid = models.CharField(max_length=20, blank=True, null=True)
+    srcdb = models.CharField(max_length=2)
     taxid = models.IntegerField(blank=True, null=True)
     status = models.CharField(max_length=50, blank=True, null=True)
     gname = models.CharField(max_length=50, blank=True, null=True)
@@ -621,6 +622,19 @@ class Updet(models.Model):
     class Meta:
         managed = False
         db_table = 'updet'        
+
+class Upfeats(models.Model):
+    upacc   = models.CharField(primary_key=True, max_length=20)
+    ftype   = models.CharField(max_length=20)
+    fstart  = models.CharField(max_length=5)
+    fstop   = models.CharField(max_length=5)
+    feature = models.CharField(max_length=5000, blank=True, null=True)
+    source  = models.CharField(max_length=2000, blank=True, null=True)
+    extid   = models.CharField(max_length=50, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'upfeats'
         
 class Syns_view(models.Model):
     source = models.CharField(max_length=6)
