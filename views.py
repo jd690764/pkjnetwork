@@ -127,6 +127,7 @@ def lookup( request ):
         if not expt == 'select one':
             ifilenames = [fn for fn in ifilenames if expt in fn] 
         else:
+            samples    = samples.filter(display=True).filter(discard=False)
             if not 'all' in bait:
                 #ifilenames = [fn for fn in ifilenames if fn.split('_')[0].lower() in baitl]
                 samples = samples.filter(bait_symbol = bait)
@@ -138,22 +139,21 @@ def lookup( request ):
             if not cline == 'all':
                 samples = samples.filter(cell_line__contains=cline)
 
-            samples    = samples.filter(display=True).filter(discard=False)
-            sampleids  = samples.values('id')
-            samplesMap = {d['id']: d['cell_line'] for d in samples.values('id', 'cell_line')}
+        sampleids  = samples.values('id')
+        samplesMap = {d['id']: d['cell_line'] for d in samples.values('id', 'cell_line')}
 
-            preprocess = preprocess.filter(sampleid__in=sampleids)
-            pp_data    = preprocess.values('bait_symbol_eid', 'taxid', 'special', 'sampleid')
-            # add cell lines to records
-            for d in pp_data:
-                d.update({'cell_line': samplesMap[d['sampleid']]})
+        preprocess = preprocess.filter(sampleid__in=sampleids)
+        pp_data    = preprocess.values('bait_symbol_eid', 'taxid', 'special', 'sampleid')
+        # add cell lines to records
+        for d in pp_data:
+            d.update({'cell_line': samplesMap[d['sampleid']]})
 
-            pp_files   = {'_'.join([re.sub(r'_\d+$', r'', d['bait_symbol_eid']), str(d['taxid']), str(d['special'])]): d['cell_line'] for d in pp_data}
-            pp_files   = {re.sub('_None$', '', k): pp_files[k] for k in pp_files.keys()}
-            ifiles     = [re.sub(r'_\d+\.i$', r'', f) for f in ifilenames]
+        pp_files   = {'_'.join([re.sub(r'_\d+$', r'', d['bait_symbol_eid']), str(d['taxid']), str(d['special'])]): d['cell_line'] for d in pp_data}
+        pp_files   = {re.sub('_None$', '', k): pp_files[k] for k in pp_files.keys()}
+        ifiles     = [re.sub(r'_\d+\.i$', r'', f) for f in ifilenames]
             
-            # these are the ifiles that remain after all the filtrations above
-            ifilenames = {ifilenames[i]: pp_files[ifiles[i]] for i in [i for i, j in enumerate(ifiles) if j in pp_files.keys()]}
+        # these are the ifiles that remain after all the filtrations above
+        ifilenames = {ifilenames[i]: pp_files[ifiles[i]] for i in [i for i, j in enumerate(ifiles) if j in pp_files.keys()]}
 
         def rowData( ifn, l, cl ):
             sig     = float(l[3])
@@ -178,8 +178,8 @@ def lookup( request ):
                     elif use_regex and re.search( sym_re, linel[2] ) :
                         if linel[2] == 'PSEUDO':
                             continue
-
-                        siglist.append( list(rowData(ifn, linel)))
+                        
+                        siglist.append( list(rowData(ifn, linel, ifilenames[ifn])))
 
             if limit_to_one_dataset:
                 bait = ['__limited to__:' + ifn]
