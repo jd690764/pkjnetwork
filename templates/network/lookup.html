@@ -11,6 +11,7 @@
 {% if not symbol is None %}
 <h4>Result for symbol [<span style="color: red">{{ symbol }}</span>]  -
   organism [<span style="color: red">{{ org }}</span>]  -
+  cell line [<span style="color: red">{{ cline }}</span>]  -
   bait <span style="color: red">{{ bait }}</span>  -
   experiment [<span style="color: red">{{ expt }}</span>]:</h4>
   
@@ -25,6 +26,7 @@
     <th>Length</th>
     <th>Coverage</th>
     <th>Unique peptides</th>
+    <th>Cell line</th>
   </tr>
     
   {% for values in choices %}

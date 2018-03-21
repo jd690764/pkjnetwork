@@ -18,7 +18,7 @@ import sys
 from lib.markutils import tabulate
 from numpy import percentile, unique
 import lib.forms as fs
-from network.models import Sample
+from network.models import Sample, Preprocess
 import pickle
 
 import logging
@@ -82,13 +82,15 @@ def lookup( request ):
     bait       = None
     symbol     = None
     expt       = None
-    
+    cline      = None
+
     if request.method == 'POST':
 
         org        = request.POST['org']
         bait       = request.POST.getlist('bait')
         symbol     = request.POST['symbol']
         expt       = request.POST['expt']
+        cline      = request.POST['cline']
         siglist    = list()
         use_regex  = True if re.search(r'\*', symbol) else False
         limit_to_one_dataset = False
@@ -98,7 +100,7 @@ def lookup( request ):
 
             sym_re = re.compile( '^' + re.sub(r'\*', r'.*', symbol), re.I )
         else:
-            if org == 'all':
+            if org == 'all' and cline == 'all' and expt != 'select one':
                 # we want to lookup mouse/human ortholog and search with both
                 h2m = pickle.load(open(cf.filesDict['h2ms'], 'rb'))
                 m2h = pickle.load(open(cf.filesDict['m2hs'], 'rb'))
@@ -117,35 +119,59 @@ def lookup( request ):
                     symbol = 'Human: ' + symbol_h + ' -- Mouse: ' + symbol_m
                     use_regex = True
             #sym_re = re.compile( '^' + symbol, re.I )    
-    
+        samples    = Sample.objects.all()
+        preprocess = Preprocess.objects.all()
         ifilenames = [fn for fn in os.listdir(cf.ifilesPath) if fn[-2:] == '.i' and not 'bioplex' in fn and fn[0] != '.' ]
         baitl      = [ b.lower() for b in bait ]
         
-        if not 'all' in bait:
-            ifilenames = [fn for fn in ifilenames if fn.split('_')[0].lower() in baitl]
-        
-        if not org == 'all':
-            ifilenames = [fn for fn in ifilenames if fn.split('_')[1] in org]
-
         if not expt == 'select one':
             ifilenames = [fn for fn in ifilenames if expt in fn] 
+        else:
+            if not 'all' in bait:
+                #ifilenames = [fn for fn in ifilenames if fn.split('_')[0].lower() in baitl]
+                samples = samples.filter(bait_symbol = bait)
+
+            if not org == 'all':
+                #ifilenames = [fn for fn in ifilenames if fn.split('_')[1] in org]
+                samples = samples.filter(taxid = org)
+
+            if not cline == 'all':
+                samples = samples.filter(cell_line__contains=cline)
+
+            samples    = samples.filter(display=True).filter(discard=False)
+            sampleids  = samples.values('id')
+            samplesMap = {d['id']: d['cell_line'] for d in samples.values('id', 'cell_line')}
+
+            preprocess = preprocess.filter(sampleid__in=sampleids)
+            pp_data    = preprocess.values('bait_symbol_eid', 'taxid', 'special', 'sampleid')
+            # add cell lines to records
+            for d in pp_data:
+                d.update({'cell_line': samplesMap[d['sampleid']]})
+
+            pp_files   = {'_'.join([re.sub(r'_\d+$', r'', d['bait_symbol_eid']), str(d['taxid']), str(d['special'])]): d['cell_line'] for d in pp_data}
+            pp_files   = {re.sub('_None$', '', k): pp_files[k] for k in pp_files.keys()}
+            ifiles     = [re.sub(r'_\d+\.i$', r'', f) for f in ifilenames]
             
-        def rowData( ifn, l ):
+            # these are the ifiles that remain after all the filtrations above
+            ifilenames = {ifilenames[i]: pp_files[ifiles[i]] for i in [i for i, j in enumerate(ifiles) if j in pp_files.keys()]}
+
+        def rowData( ifn, l, cl ):
             sig     = float(l[3])
             sc      = int( re.sub(r'.*_raw_(\d+)(_.+|$)', r'\1', l[9] ))
             length  = round(float( re.sub(r'.*_len_([\d\.]+)_.*', r'\1', l[9] )), 2)
             cov     = float( re.sub(r'.*_cov_([\d\.\-]+)_.*', r'\1', l[9] )) if re.search(r'_cov_', l[9] ) else -1
             upept   = int( re.sub(r'.*upept_([\d\-]+)$', r'\1', l[9] )) if re.search(r'_upept_', l[9] ) else -1
             prey    = l[2]
-            return( ifn, prey, sig, sc, length, cov, upept )
+            celline = cl
+            return( ifn, prey, sig, sc, length, cov, upept, celline )
             
-        for ifn in ifilenames :
+        for ifn in ifilenames.keys() :
             with open(cf.ifilesPath + ifn) as ifile :
                 for linel in tabulate(ifile) :
                     if linel[0].startswith('#') or linel[0].startswith('ID'):
                         continue ;
                     elif not use_regex and linel[2].lower() == symbol.lower():
-                        siglist.append( list(rowData(ifn, linel)))
+                        siglist.append( list(rowData(ifn, linel, ifilenames[ifn])))
                         # if we are not using regex, don't allow multiple hits in same dataset
                         break
                     
@@ -163,14 +189,15 @@ def lookup( request ):
         siglist = sorted( siglist, key=lambda x: x[2], reverse = True )
         
         for i in range(0,len(siglist)) :
-            result.append( [ siglist[i][0], siglist[i][1], '(rank ' + str(i+1) + '/' + str(len(siglist)) + ' appearances)', '{: <4.2E}'.format( siglist[i][2]), siglist[i][3], siglist[i][4], siglist[i][5], siglist[i][6] ] )
+            result.append( [ siglist[i][0], siglist[i][1], '(rank ' + str(i+1) + '/' + str(len(siglist)) + ' appearances)', 
+                             '{: <4.2E}'.format( siglist[i][2]), siglist[i][3], siglist[i][4], siglist[i][5], siglist[i][6], siglist[i][7] ] )
             
-    eform  = fs.lookupForm( initial={'org': 'all', 'bait': 'all', 'expt': 'select one'} )
+    eform  = fs.lookupForm( initial={'org': 'all', 'bait': 'all', 'expt': 'select one', 'cline': 'all'} )
 
     if org in orgDict:
         org = orgDict[ org ]    
 
-    return render( request, 'network/lookup.html', { 'form' : eform, 'choices': result, 'symbol': symbol, 'bait': bait, 'org': org, 'expt': expt })
+    return render( request, 'network/lookup.html', { 'form' : eform, 'choices': result, 'symbol': symbol, 'bait': bait, 'org': org, 'expt': expt, 'cline': cline })
 
 @login_required()
 def lookupPTM( request ):
