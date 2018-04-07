@@ -550,7 +550,11 @@ class Sample(models.Model):
     note = models.CharField(max_length=500,
                             blank=True,
                             null=True,
-                            help_text="Any note(s) worth mentioning.") 
+                            help_text="Any note(s) worth mentioning.")
+    raw_folder = models.CharField(max_length=100,
+                                 blank=True,
+                                 null=True,                                 
+                                 help_text="Name of folder where raw datafiles are stored.")
     ff_folder = models.CharField(max_length=50,
                                  blank=True,
                                  null=True,                                 
@@ -569,7 +573,7 @@ class Sample(models.Model):
     display = models.NullBooleanField(blank = True, null = True,
                                   help_text = 'Include this experiment in lookups?',
                                   choices = ((True, 'display'), (False, 'hide')))
-
+    
     
     def get_absolute_url(self):
         """
