@@ -37,7 +37,7 @@ preprocess_from_sample.short_description = 'Create Preprocess record from Sample
 @admin.register(Sample)
 class SampleAdmin(admin.ModelAdmin):
     list_display = ('id', 'uid', 'label', 'cell_line', 'cond', 'variant', 'tag', 'tag_length', 'facility', 'bait_symbol', 'eid', 'rawfile',
-                    'bgfile','mrmsfile', 'lab', 'exptype', 'note', 'ff_folder', 'box_folder', 'date_back', 'taxid', 'discard', 'display')
+                    'bgfile','raw_folder', 'lab', 'exptype', 'note', 'ff_folder', 'box_folder', 'date_back', 'taxid', 'discard', 'display')
     list_filter = (('lab', DropdownFilter), ('facility', DropdownFilter), ('bait_symbol', DropdownFilter), ('uid', DropdownFilter))
 
     actions = [duplicate_record, preprocess_from_sample]

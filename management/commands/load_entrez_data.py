@@ -27,7 +27,15 @@ files = { 'hs' : [ 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/ASN_BINARY/Mammalia/Hom
                    path2+'mm_unmapped.cp2',
                    '10090',
                    path2+'mmg_latest',
-                   path2+'mmg_old' ]
+                   path2+'mmg_old' ],
+          'rn' : [ 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/ASN_BINARY/Mammalia/Rattus_norvegicus.ags.gz',
+                   path+'rn.ags.gz',
+                   path+'rn.xml',
+                   path+'rn_unmapped.cp2',
+                   path2+'rn_unmapped.cp2',
+                   '10116',
+                   path2+'rng_latest',
+                   path2+'rng_old' ]
 }
 domain_file = path2 + 'gene2dom.cyt'
 
@@ -82,7 +90,8 @@ class Command(BaseCommand):
 
         for org, f in files.items():
 
-            os.remove( f[3] )
+            if os.path.exists( f[3] ):
+                os.remove( f[3] )
             # call the xml parser
             genehasher.xml2bin( f[2], f[3], 'tsv' )
             #os.remove( inp )
@@ -96,6 +105,7 @@ class Command(BaseCommand):
         
         hobjs    = Entrez.objects.filter( taxid = 9606, genetype = 'protein-coding' )
         mobjs    = Entrez.objects.filter( taxid = 10090, genetype = 'protein-coding' )
+        robjs    = Entrez.objects.filter( taxid = 10116, genetype = 'protein-coding' )
 
         eids     = dict()
         exts     = dict()
@@ -106,9 +116,10 @@ class Command(BaseCommand):
         trembls  = dict()
         mrnas    = dict()
 
-        oobjs    = [ hobjs, mobjs ]
+        oobjs    = [ hobjs, mobjs, robjs ]
         hsg      = dict()
-        for i in range(2) :
+        
+        for i in range(3) :
             print( i )
             for dbo in oobjs[ i ]:
                 newobj                = dict()
@@ -212,6 +223,11 @@ class Command(BaseCommand):
                 print( len(to_pickle['EID']))
                 pickle.dump( to_pickle, open( path2 + 'hsmmg_latest', 'wb' ))
 
+            if i == 2:
+                pickle.dump( to_pickle, open( files[ 'rn' ][6], 'wb' ))
+                print( len(to_pickle['EID']))
+
+                
     def _export_domain_file( self ):
         sql = '\n'.join(["select symbol, x.taxid, group_concat(distinct cdd.name SEPARATOR ' | ') names, group_concat(distinct case when length(substring_index(substring_index(description, '.', 1), ';', 1)) > 50 then concat(substring(description, 1, 50), '...') else substring_index(substring_index(description, '.', 1), ';', 1) end separator ' | ') descriptions",
                         "from (", 

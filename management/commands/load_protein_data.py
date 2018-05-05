@@ -26,7 +26,13 @@ files = { 'hs' : [ 'ftp://ftp.ncbi.nlm.nih.gov/genomes/Homo_sapiens/protein/prot
                    path + 'mm.protein.gbk',                   
                    path + 'mm.protein.tsv',
                    '10090',
-                   path1 + 'mmp_latest' ]
+                   path1 + 'mmp_latest' ],
+          'rn' : [ 'ftp://ftp.ncbi.nlm.nih.gov/genomes/R_norvegicus/protein/protein.gbk.gz',
+                   path + 'rn.protein.gbk.gz',
+                   path + 'rn.protein.gbk',
+                   path + 'rn.protein.tsv',
+                   '10116',
+                   path1 + 'rnp_latest']
 }
 
 class Command(BaseCommand):

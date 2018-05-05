@@ -20,11 +20,18 @@ files = { 'hs' : [ 'ftp.ensembl.org',
                    'Mus_musculus\.GRCm\d+\.\d+\.gff3\.gz',
                    path+'mm.gff3.gz',
                    path+'mm.gff3',
-                   path+'mm.gff3.tsv' ]
+                   path+'mm.gff3.tsv' ],
+          'rn' : [ 'ftp.ensembl.org',
+                   'pub/current_gff3/rattus_norvegicus/',
+                   'Rattus_norvegicus.Rnor_\d+\.\d+\.\d+\.gff3\.gz',
+                   path+'rn.gff3.gz',
+                   path+'rn.gff3',
+                   path+'rn.gff3.tsv' ]
 }
 
 taxids = { 'hs' : '9606',
-           'mm' : '10090'
+           'mm' : '10090',
+           'rn' : '10116'
            }
 
 
@@ -37,6 +44,7 @@ class Command(BaseCommand):
         
         for org, f in files.items():
             dlfile = findURL( f[0], f[1], f[2] )
+            print(dlfile)
             if dlfile:
                 print( dlfile )
                 downloadFromUrl( dlfile, f[3] )

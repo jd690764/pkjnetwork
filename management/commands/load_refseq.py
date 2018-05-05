@@ -22,7 +22,7 @@ class Command(BaseCommand):
         downloadFromUrl( files[0], files[1] )
         gunzip( files[1], path, files[2] )
         os.remove( files[1] )
-        os.system( "grep -P '^(9606|10090)\t' " + files[2] + ' > ' + path + 'x' )
+        os.system( "grep -P '^(9606|10090|10116)\t' " + files[2] + ' > ' + path + 'x' )
         os.rename( path + 'x', files[2] )
         
     def _load_dbtable( self ):
