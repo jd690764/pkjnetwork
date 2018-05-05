@@ -128,9 +128,10 @@ def lookup( request ):
             ifilenames = [fn for fn in ifilenames if expt in fn] 
         else:
             samples    = samples.filter(display=True).filter(discard=False)
+
             if not 'all' in bait:
                 #ifilenames = [fn for fn in ifilenames if fn.split('_')[0].lower() in baitl]
-                samples = samples.filter(bait_symbol = bait)
+                samples = samples.filter(bait_symbol__iexact = bait[0])
 
             if not org == 'all':
                 #ifilenames = [fn for fn in ifilenames if fn.split('_')[1] in org]
