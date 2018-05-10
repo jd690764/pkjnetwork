@@ -52,7 +52,7 @@ class Command(BaseCommand):
         ds = pd.DataFrame(list(ds), columns = ['rsid', 'upid', 'src'])
 
         # get refseq seqs and attributes
-        rs = pd.DataFrame(list([(v['acc'], v['taxid'], v['protname'], v['eid'], v['symbol'], v['len'], v['seq'])
+        rs = pd.DataFrame(list([(v['acc'], v['taxid'], v['protname'], v['eid'], v['symbol'], v['len'], v['seq'].upper())
                                 for v in Ncbiprots.objects.values('acc', 'taxid', 'protname', 'eid', 'symbol', 'len', 'seq')]),
                           columns = ['acc', 'taxid', 'protname', 'eid', 'symbol', 'len', 'seq']
         )
