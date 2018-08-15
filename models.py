@@ -544,7 +544,7 @@ class Sample(models.Model):
                            default='jackson',
                            help_text='Lab for which the experiment was conducted, e.g.:Jackson lab ')
     exptype = models.CharField(max_length=5,
-                               choices=(('apms', 'AP-MS'), ('apex2', 'APEX2')),
+                               choices=(('apms', 'AP-MS'), ('apex2', 'APEX2'), ('tmt10', 'TMT10'), ('shotg', 'shotgun')),
                                help_text='The type of experiment, e.g.: AP-MS',
                                default='apms' ) 
     note = models.CharField(max_length=500,
@@ -566,7 +566,7 @@ class Sample(models.Model):
     date_back = models.DateField(help_text='Date the mass spec data were ready.',
                                  blank=True,
                                  null=True,)
-    taxid = models.IntegerField(blank=True, null=True, help_text='Taxid of organism of the cell line.', choices=((9606, 'human'),(10090, 'mouse')))
+    taxid = models.IntegerField(blank=True, null=True, help_text='Taxid of organism of the cell line.', choices=((9606, 'human'),(10090, 'mouse'),(6239,'worm'),(10116,'rat')))
     discard = models.NullBooleanField(blank = True, null = True,
                                   help_text = 'Is this a bad experiment?',
                                   choices = ((True, 'discard'), (False, 'keep')))
@@ -639,6 +639,17 @@ class Upfeats(models.Model):
     class Meta:
         managed = False
         db_table = 'upfeats'
+
+class Upiso(models.Model):
+    upacc = models.CharField(max_length=20)
+    upid  = models.CharField(max_length=20, blank=True, null=True)
+    isoid = models.CharField(primary_key=True, max_length=20)
+    descr = models.CharField(max_length=500, blank=True, null=True)
+    seq   = models.TextField(blank=True, null=True)    
+
+    class Meta:
+        managed = False
+        db_table = 'upiso'
         
 class Syns_view(models.Model):
     source = models.CharField(max_length=6)
