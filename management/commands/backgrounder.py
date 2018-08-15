@@ -31,7 +31,7 @@ class Command(BaseCommand):
             #action  = 'store_true',
             #dest    = 'buid',
             #default = False,
-            help    = 'Preprocess data from database by id.',
+            help    = 'Preprocess data from database by id. xxx --byid 1234 324 ...',
         )
         #parser.add_argument(
         #    '--byfile',
@@ -88,14 +88,14 @@ class Command(BaseCommand):
 
         sys.stdout.write(outfname+'\n') 
 
-        if os.path.isfile( mrmspath + mrmsfile ):
+        if not mrmsfile == None and os.path.isfile( mrmspath + mrmsfile ):
             infile = open( mrmspath + mrmsfile )
         elif not infilename == None and 'mrms' in infilename :
             infile = open( mrmspath + infilename ) 
         elif 'xml' in infilename :
             infile = open( rawpath + infilename, 'rb' )
         elif '.xlsx' in infilename and parser == 'SUMS':
-            mrmsfile = mrmsfile if mrmsfile else re.sub( '^(.+)\.xlsx', '\1', infilename ) + '.mrms'
+            mrmsfile = mrmsfile if mrmsfile else re.sub( r'^(.+)\.xlsx', r'\1', infilename ) + '.mrms'
             if not os.path.isfile( mrmspath + mrmsfile ):
                 exfile   = pd.ExcelFile( rawpath + infilename )
                 if 'GLOBAL' in exfile.sheet_names:
