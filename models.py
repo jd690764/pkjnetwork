@@ -82,6 +82,7 @@ class Cnv(models.Model):
         managed = False
         db_table = 'cnv'
 
+    
 
 class Dbsnp(models.Model):
     rsno = models.CharField(primary_key=True, max_length=20)
@@ -362,6 +363,71 @@ class ManualMapping(models.Model):
         db_table = 'manual_mapping'
 
 
+class Massspec(models.Model):
+    name = models.CharField( max_length = 50,
+                             help_text = 'Name for the mass spec run. E.g.: techrep 1',
+                             blank=True, null=True)
+    machine = models.CharField( max_length = 30,
+                                choices = (('Thermo', 'Thermo'), ('timsTOF', 'timsTOF'), ('Velos', 'Velos'), ('Elite', 'Elite')),
+                                help_text = 'Machine that was used to run the mass spec.'),
+    facility = models.CharField(max_length=5,
+                                help_text='At which facility the MS was performed, e.g.: SUMS',
+                                choices = (('lane', "Bill Lane facility"), ('sums', 'SUMS'), ('other', 'Other'), ('jl', 'Jackson Lab')),
+                                default='sums')
+    gradient = models.CharField(max_length=50,
+                                help_text = 'LC gradient used for peptide separation.',
+                                blank=True, null=True)
+    method = models.CharField( max_length = 100,
+                               help_text = 'Name of the method file containing params that wereused to generate the ms run. ',
+                               blank=True, null=True)
+    rundate = models.DateField(help_text='Date mass spec run was finished.',
+                               blank=True,
+                               null=True)
+    rawdata = models.CharField( max_length = 50,
+                              help_text = 'Folder where the raw data files can be found.',
+                              blank=True, null=True)
+    
+
+class Dataproc(models.Model):
+    msid = models.ForeignKey(Massspec, on_delete=models.CASCADE),
+    name = models.CharField( max_length = 50,
+                             help_text = 'Name for the data processing step.',
+                             blank=True, null=True)
+    software = models.CharField( max_length = 30,
+                                 choices = (('Byonic', 'Byonic'), ('Other', 'Other')),
+                                 help_text = 'Name of the software looking up the spectra.')
+    outfolder = models.IntegerField( help_text = 'Name of folder where the output of the software is stored.',
+                                     blank=True, null=True)
+    paramfile = models.CharField( max_length = 50,
+                                  help_text = 'Name of paramfile used.',
+                                  blank=True, null=True)
+    deriv = models.CharField( max_length = 50,
+                              help_text = 'Chemical used to derivatize peptides. E.g.: IAA',
+                              choices = (('iaa', 'Iodo Acetamide'), ('baa', 'Bromo Acetamide')),
+                              blank=True, null=True)
+    ff_folder = models.CharField(max_length=50,
+                                 blank=True,
+                                 null=True,                                 
+                                 help_text="Name of folder where fraction files are stored.") 
+    box_folder = models.CharField(max_length=50,
+                                  blank=True,
+                                  null=True,
+                                  help_text="Name of folder in box account where data were uploaded by SUMS.") 
+    date_back = models.DateField(help_text='Date the mass spec data were ready.',
+                                 blank=True,
+                                 null=True,)
+    rawfile = models.CharField(max_length=100,
+                               help_text="Name of the 'rawfile' (protein level summary file) as given by the facility, e.g.: 20160718_NMooney_p53Extras_HeatMaps.xlsx")
+    bgfile = models.CharField(max_length=100,
+                              blank=True,
+                              null=True,
+                              help_text="Name of the 'background' (summary file of a pre-sample run) as given by the facility, e.g.: 160628_Blank_Pre_rerun_p53_plus.raw_20160711_Byonic_Mouse.xlsx")
+    mrmsfile = models.CharField(max_length=50,
+                                blank=True,
+                                null=True,
+                                help_text="Name of a converted (into text) of a 'rawfile', e.g.: IFT88_9606_RPE_RABL2B_WT.mrms")
+        
+        
 class Muts(models.Model):
     mutid = models.AutoField(primary_key=True)
     cancer_id = models.IntegerField()
@@ -423,7 +489,23 @@ class Orthology(models.Model):
         managed = False
         db_table = 'orthology'
 
+class Preproc(models.Model):
+    prid = models.ForeignKey(Dataproc, on_delete=models.CASCADE), 
+    special = models.CharField( max_length = 50,
+                                help_text = 'Used to create the .i file; string to distinguish samples.',
+                                blank=True, null=True)
+    parser = models.CharField( max_length = 10,
+                               help_text = 'Source file format - how to parse the data file.',
+                               choices = (('lane', 'Lane'), ('sums', 'SUMS'), ('xml', 'XML'), ('laneExcel', 'LaneExcel')))
+    comment = models.CharField( max_length = 200,
+                               help_text = 'Any relevant comment related to this processing step.',
+                               blank=True, null=True)
+    display = models.NullBooleanField(blank = True, null = True,
+                                  help_text = 'Include this experiment in lookups?',
+                                  choices = ((True, 'display'), (False, 'hide')))
 
+    
+        
 class Preprocess(models.Model):
     rawfile = models.CharField( max_length = 100,
                                 help_text = 'Excel file that contains protein level data',
@@ -471,6 +553,94 @@ class Profiles(models.Model):
         managed = False
         db_table = 'profiles'
 
+class ProtSample(models.Model):
+    uid = models.CharField(max_length=20,
+                           help_text='Unique id for the experiment: PJXnnn')
+    name = models.CharField(max_length=50,
+                             help_text='Name for the experiment, e.g.: RalB S28N')
+    cell_line = models.CharField(max_length=50,
+                                 help_text='cell line used for the experiment, e.g.: IMCD3')
+    treatment = models.CharField(max_length=50,
+                                 blank=True,
+                                 null=True,
+                                 help_text='experimental condition, e.g.: + doxorubicin')
+    variant = models.CharField(max_length=50,
+                               blank=True,
+                               null=True,
+                               help_text='Mutation/truncation ... in the bait, e.g.: mut (S17N - GDP)')
+    genotype = models.CharField(max_length=50,
+                                blank=True,
+                                null=True,
+                                help_text='Any genetic change in the cell line, e.g. RABL2Bdel')
+    tag = models.CharField(max_length=5,
+                           choices = (('nt', 'N-term'),('ct', 'C-term'),('lap1', 'N-term (LAP1)'), ('lap6', 'N-term (LAP6)'),
+                                      ('lap7', 'C-term (LAP7)'),('ctv5', 'C-term (V5-TEV-S-tag)'), ('lap5', 'C-term (LAP5)'),
+                                      ('lap3', 'N-term (LAP3)'), ('uk', 'unknown'), ('none', 'none')),
+                           help_text='The tag, that is fused to the protein of interest, e.g.: N-term(LAP6)')
+    tag_length = models.IntegerField(help_text='Length of the tag fused to the protein. This is only interesting for N-terminal fusions.')
+    bait_symbol = models.CharField(max_length=20,
+                                   help_text='Gene symbol for the bait, e.g.: KRAS')
+    eid = models.IntegerField( help_text='Entrez id for the gene', blank = True, null = True)
+    lab = models.CharField(max_length=20,
+                           choices=(('jackson', 'Jackson lab'), ('jackson/sage', 'Jackson/Sage labs'), ('sage', 'Sage lab'), ('attardi', 'Attardi lab'),
+                                    ('fire', 'Fire lab'), ('einav', 'Einav lab'), ('carette', 'Carette lab'),
+                                    ('gleeson', 'Gleeson lab'), ('arvin', 'Arvin lab'), ('bogyo', 'Bogyo lab'), ('cleary', 'Cleary lab'),
+                                    ('cimprich', 'Cimprich lab'), ('lewis', 'Lewis lab'), ('chen', 'Chen lab'), ('poirier', 'Poirier lab'),
+                                    ('sweet-cordero', 'Sweet-Cordero lab'), ('greenberg', 'Greenberg lab'), ('weis', 'Weis lab'), ('wernig', 'Wernig lab')),
+                           default='jackson',
+                           help_text='Lab for which the experiment was conducted, e.g.:Jackson lab ')
+    exptype = models.CharField(max_length=5,
+                               choices=(('apms', 'AP-MS'), ('apex2', 'APEX2'), ('tmt10', 'TMT10'), ('shotg', 'shotgun')),
+                               help_text='The type of experiment, e.g.: AP-MS',
+                               default='apms' ) 
+    note = models.CharField(max_length=500,
+                            blank=True,
+                            null=True,
+                            help_text="Any note(s) worth mentioning.")
+    date = models.DateField(help_text='Date sample prep was finished.',
+                            blank=True,
+                            null=True,)
+    taxid = models.IntegerField(blank=True, null=True, help_text='Taxid of organism of the cell line.', choices=((9606, 'human'),(10090, 'mouse'),(6239,'worm'),(10116,'rat')))
+    experimenter = models.CharField(max_length=50,
+                                    blank=True,
+                                    null=True,
+                                    help_text='Who did the sample preparation?')
+    discard = models.NullBooleanField(blank = True, null = True,
+                                  help_text = 'Is this a bad experiment?',
+                                  choices = ((True, 'discard'), (False, 'keep')))
+    fractions = models.IntegerField(blank=True, null=True, help_text='Number of fractions for this sample', default=8, editable=True)
+    
+    def get_absolute_url(self):
+        """
+        Returns the url to access a particular protsample instance.
+        """
+        return reverse('protsample-detail', args=[str(self.id)])
+
+    class Meta:
+        managed = True
+
+        
+class Fraction(models.Model):
+    sid = models.ForeignKey(ProtSample, on_delete=models.CASCADE),
+    name = models.CharField( max_length = 50,
+                             help_text = 'Name for the fraction. E.g.: band.1',
+                             blank=True, null=True)
+    digest = models.CharField( max_length = 30,
+                               choices = (('trypsin', 'trypsin'), ('chymotrypsin', 'chymotrypsin')),
+                               help_text = 'Enzyme used for digesting protein sample'),
+    taxid = models.IntegerField( help_text = 'NCBI taxonomy id for organism (of the cell line)',
+                                 choices = ((9606, 9606), (10090, 10090)))
+    method = models.CharField( max_length = 10,
+                               help_text = 'Method used to generate fractions from sample. E.g." gel fractionation',
+                               default = 'gelfrac',
+                               editable = True,
+                               choices = (('gelfrac', 'gel fractionation'), ('hplc', 'HPLC')),
+                               blank=True, null=True)
+    deriv = models.CharField( max_length = 50,
+                              help_text = 'Chemical used to derivatize peptides. E.g.: IAA',
+                              choices = (('iaa', 'Iodo Acetamide'), ('baa', 'Bromo Acetamide')),
+                              blank=True, null=True)
+    
 
 class Refseq(models.Model):
     taxid = models.IntegerField(db_column='TAXID')  # Field name made lowercase.
@@ -496,6 +666,93 @@ class Refseq(models.Model):
     class Meta:
         managed = False
         db_table = 'refseq'
+
+class Sample(models.Model):
+    uid = models.CharField(max_length=20,
+                           help_text='Unique id for the experiment: PJXnnn')
+    label = models.CharField(max_length=50,
+                             help_text='label for the experiment, e.g.: RalB S28N')
+    cell_line = models.CharField(max_length=50,
+                                 help_text='cell line used for the experiment, e.g.: IMCD3')
+    cond = models.CharField(max_length=50,
+                                 blank=True,
+                                 null=True,
+                                 help_text='experimental condition, e.g.: + doxorubicin')
+    variant = models.CharField(max_length=50,
+                               blank=True,
+                               null=True,
+                               help_text='Mutation/truncation ... in the bait, e.g.: mut (S17N - GDP)')
+    tag = models.CharField(max_length=5,
+                           choices = (('nt', 'N-term'),('ct', 'C-term'),('lap1', 'N-term (LAP1)'), ('lap6', 'N-term (LAP6)'),
+                                      ('lap7', 'C-term (LAP7)'),('ctv5', 'C-term (V5-TEV-S-tag)'), ('lap5', 'C-term (LAP5)'),
+                                      ('lap3', 'N-term (LAP3)'), ('uk', 'unknown'), ('none', 'none')),
+                           help_text='The tag, that is fused to the protein of interest, e.g.: N-term(LAP6)')
+    tag_length = models.IntegerField(help_text='Length of the tag fused to the protein. This is only interesting for N-terminal fusions.')
+    facility = models.CharField(max_length=5,
+                                help_text='At which facility the MS was performed, e.g.: SUMS',
+                                choices = (('lane', "Bill Lane facility"), ('sums', 'SUMS'), ('other', 'Other')),
+                                default='sums')
+    bait_symbol = models.CharField(max_length=20,
+                                   help_text='Gene symbol for the bait, e.g.: KRAS')
+    eid = models.IntegerField( help_text='Entrez id for the gene', blank = True, null = True)
+    rawfile = models.CharField(max_length=100,
+                               help_text="Name of the 'rawfile' (protein level summary file) as given by the facility, e.g.: 20160718_NMooney_p53Extras_HeatMaps.xlsx")
+    bgfile = models.CharField(max_length=100,
+                              blank=True,
+                              null=True,
+                              help_text="Name of the 'background' (summary file of a pre-sample run) as given by the facility, e.g.: 160628_Blank_Pre_rerun_p53_plus.raw_20160711_Byonic_Mouse.xlsx")
+    mrmsfile = models.CharField(max_length=50,
+                                blank=True,
+                                null=True,
+                                help_text="Name of a converted (into text) of a 'rawfile', e.g.: IFT88_9606_RPE_RABL2B_WT.mrms")
+    lab = models.CharField(max_length=20,
+                           choices=(('jackson', 'Jackson lab'), ('jackson/sage', 'Jackson/Sage labs'), ('sage', 'Sage lab'), ('attardi', 'Attardi lab'),
+                                    ('fire', 'Fire lab'), ('einav', 'Einav lab'), ('carette', 'Carette lab'),
+                                    ('gleeson', 'Gleeson lab'), ('arvin', 'Arvin lab'), ('bogyo', 'Bogyo lab'), ('cleary', 'Cleary lab'),
+                                    ('cimprich', 'Cimprich lab'), ('lewis', 'Lewis lab'), ('chen', 'Chen lab'), ('poirier', 'Poirier lab'),
+                                    ('sweet-cordero', 'Sweet-Cordero lab'), ('greenberg', 'Greenberg lab'), ('weis', 'Weis lab'), ('wernig', 'Wernig lab')),
+                           default='jackson',
+                           help_text='Lab for which the experiment was conducted, e.g.:Jackson lab ')
+    exptype = models.CharField(max_length=5,
+                               choices=(('apms', 'AP-MS'), ('apex2', 'APEX2'), ('tmt10', 'TMT10'), ('shotg', 'shotgun')),
+                               help_text='The type of experiment, e.g.: AP-MS',
+                               default='apms' ) 
+    note = models.CharField(max_length=500,
+                            blank=True,
+                            null=True,
+                            help_text="Any note(s) worth mentioning.")
+    raw_folder = models.CharField(max_length=100,
+                                 blank=True,
+                                 null=True,                                 
+                                 help_text="Name of folder where raw datafiles are stored.")
+    ff_folder = models.CharField(max_length=50,
+                                 blank=True,
+                                 null=True,                                 
+                                 help_text="Name of folder where fraction files are stored.") 
+    box_folder = models.CharField(max_length=50,
+                                  blank=True,
+                                  null=True,
+                                  help_text="Name of folder in box account where data were uploaded by SUMS.") 
+    date_back = models.DateField(help_text='Date the mass spec data were ready.',
+                                 blank=True,
+                                 null=True,)
+    taxid = models.IntegerField(blank=True, null=True, help_text='Taxid of organism of the cell line.', choices=((9606, 'human'),(10090, 'mouse'),(6239,'worm'),(10116,'rat')))
+    discard = models.NullBooleanField(blank = True, null = True,
+                                  help_text = 'Is this a bad experiment?',
+                                  choices = ((True, 'discard'), (False, 'keep')))
+    display = models.NullBooleanField(blank = True, null = True,
+                                  help_text = 'Include this experiment in lookups?',
+                                  choices = ((True, 'display'), (False, 'hide')))
+    
+    
+    def get_absolute_url(self):
+        """
+        Returns the url to access a particular sample instance.
+        """
+        return reverse('sample-detail', args=[str(self.id)])
+
+    class Meta:
+        managed = True
 
 class Sample(models.Model):
     uid = models.CharField(max_length=20,
@@ -660,3 +917,20 @@ class Syns_view(models.Model):
         managed = False
         db_table = 'syns_view'
         
+class Fraction_ms(models.Model):
+    frid = models.ForeignKey(Fraction, on_delete=models.CASCADE)
+    msid = models.ForeignKey(Massspec, on_delete=models.CASCADE)
+    name = models.CharField( max_length = 50,
+                             help_text = 'Name for the fraction in the context of the ms run, if any. E.g.: Channel_126',
+                             blank=True, null=True)
+
+
+class Fraction_ms(models.Model):
+    frid = models.ForeignKey(Fraction, on_delete=models.CASCADE)
+    msid = models.ForeignKey(Massspec, on_delete=models.CASCADE)
+    name = models.CharField( max_length = 50,
+                             help_text = 'Name for the fraction in the context of the ms run, if any. E.g.: Channel_126',
+                             blank=True, null=True)
+
+    
+    

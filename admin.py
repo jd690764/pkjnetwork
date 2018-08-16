@@ -7,7 +7,7 @@ import datetime
 
 # Register your models here.
 
-from .models import Hgnc, Sample, Preprocess
+from .models import Hgnc, Sample, Preprocess, ProtSample
 
 class HgncAdmin(admin.ModelAdmin):
     list_display = ('hgnc_id', 'symbol', 'hgnc_name', 'entrez_id')
@@ -63,6 +63,37 @@ class SampleAdmin(admin.ModelAdmin):
             field.initial  = datetime.datetime.today().strftime('%Y-%m-%d')
             
             
+        return field
+        
+@admin.register(ProtSample)
+class ProtSampleAdmin(admin.ModelAdmin):
+    list_display = ('id', 'uid', 'name', 'cell_line', 'treatment', 'variant', 'genotype', 'tag', 'tag_length', 'bait_symbol', 'eid',
+                    'lab', 'exptype', 'note', 'experimenter', 'date', 'taxid', 'discard', 'fractions')
+    list_filter = (('lab', DropdownFilter), ('exptype', DropdownFilter), ('bait_symbol', DropdownFilter), ('uid', DropdownFilter))
+
+    actions = [duplicate_record]
+    
+    def formfield_for_dbfield(self, db_field, **kwargs):
+        field =  super(ProtSampleAdmin, self).formfield_for_dbfield(db_field, **kwargs)
+        if db_field.name == 'taxid':
+            field.initial = '9606'
+        elif db_field.name == 'uid':
+            x = Sample.objects.filter(uid__contains = 'PJX').values('uid')
+            field.initial = 'PJX' + str(max([int(re.sub(r'PJX', r'', id['uid'])) for id in x]) + 1)
+        elif db_field.name == 'exptype':
+            field.initial = 'apms'
+        elif db_field.name == 'lab':
+            field.initial = 'jackson'
+        elif db_field.name == 'discard':
+            field.initial = 'False'
+        elif db_field.name == 'tag_length':
+            field.initial = 0
+        elif db_field.name == 'date':
+            field.initial  = datetime.datetime.today().strftime('%Y-%m-%d')
+        elif db_field.name == 'fractions':
+            field.initial = 8
+        elif db_field.name == 'fractions':
+            field.initial = 'NANCIE'            
         return field
         
 @admin.register(Preprocess)
