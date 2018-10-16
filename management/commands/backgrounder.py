@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.db import connection
 
-from network.models import Preprocess, Sample
+from network.models import Preprocess, Sample, Preproc, Psample, Dproc
 
 import lib.interactors as I
 import lib.MSpreprocess as ms
@@ -31,7 +31,7 @@ class Command(BaseCommand):
             #action  = 'store_true',
             #dest    = 'buid',
             #default = False,
-            help    = 'Preprocess data from database by id. xxx --byid 1234 324 ...',
+            help    = 'Preprocess data from database by preproc.id. xxx --byid 1234 324 ...',
         )
         #parser.add_argument(
         #    '--byfile',
@@ -46,8 +46,18 @@ class Command(BaseCommand):
         row     = Preprocess.objects.get( pk = uid )
         baitsym = b4us(row.bait_symbol_eid)
         sample  = Sample.objects.get( pk = int(row.sampleid) )
-        self._process_dataset( row.rawfile, row.parser.upper(), baitsym, str(row.taxid), row.special, row.bgfile, row.mrmsfile, sample.id )        
-    
+        self._process_dataset( row.rawfile, row.parser.upper(), baitsym, str(row.taxid), row.special, row.bgfile, row.mrmsfile, sample.id, 'Sample' )        
+
+    def _process_by_preproc_id( self, uid ):
+
+        preproc = Preproc.objects.get( pk = uid )
+        psample = Psample.objects.get( expid_id = int(preproc.expid_id))
+        baitsym = psample.bait_symbol
+        dproc   = Dproc.objects.get( pk = preproc.dpid_id )
+        # yet to be written
+        rawfile = ms.make_rawfile(dproc.id)
+        self._process_dataset( rawfile, preproc.parser.upper(), baitsym, str(psample.taxid), preproc.special, dproc.bgfile, dproc.mrmsfile, dproc.id, 'Dproc' )
+        
     def _process_byfile( self ):
 
         instruction_f = open( cf.bgerfilePath )        
@@ -75,7 +85,7 @@ class Command(BaseCommand):
             self._process_dataset( infilename, parser.upper(), baitsym, str(org), special, bgfilename, mrmsfile, -1 )
 
 
-    def _process_dataset( self, infilename, parser, baitsym, org, special, bgfilename, mrmsfile, sid ):
+    def _process_dataset( self, infilename, parser, baitsym, org, special, bgfilename, mrmsfile, sid, table ):
 
         if special and special[0] == '*' : 
             outfname_pfx   =    special[1:]
@@ -121,7 +131,7 @@ class Command(BaseCommand):
         # get coverage data file
         covfile = None
         if sid > 0:
-            sample  = Sample.objects.get( pk = sid )
+            sample  = getattr(sys.modules[__name__], table).objects.get(pk = sid)
             if sample.ff_folder == None or sample.ff_folder == '':
                 print( 'no ff_folder for sampleid=' + str(sid) ) 
             else:
@@ -175,7 +185,7 @@ class Command(BaseCommand):
         #elif options[ 'byid' ]:
         for uid in options[ 'byid' ]:
             print( 'Preprocess from by id from database: ' + str(uid) )
-            self._process_byid( uid )
+            self._process_by_preproc_id( uid )
 
 
     
