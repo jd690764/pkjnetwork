@@ -378,7 +378,8 @@ class Experiment(models.Model):
                                     ('fire', 'Fire lab'), ('einav', 'Einav lab'), ('carette', 'Carette lab'),
                                     ('gleeson', 'Gleeson lab'), ('arvin', 'Arvin lab'), ('bogyo', 'Bogyo lab'), ('cleary', 'Cleary lab'),
                                     ('cimprich', 'Cimprich lab'), ('lewis', 'Lewis lab'), ('chen', 'Chen lab'), ('poirier', 'Poirier lab'),
-                                    ('sweet-cordero', 'Sweet-Cordero lab'), ('greenberg', 'Greenberg lab'), ('weis', 'Weis lab'), ('wernig', 'Wernig lab')),
+                                    ('sweet-cordero', 'Sweet-Cordero lab'), ('greenberg', 'Greenberg lab'), ('weis', 'Weis lab'), ('wernig', 'Wernig lab'),
+                                    ('lenardo', 'Lenardo lab (NIH)')),
                            default='jackson',
                            help_text='Lab for which the experiment was conducted, e.g.:Jackson lab ')
     discard = models.NullBooleanField(blank = True, null = True,
@@ -390,6 +391,7 @@ class Experiment(models.Model):
 
     class Meta:
         managed = True
+        ordering = ( 'lab', )
     
 class ExperimentEdit(Experiment):
 
@@ -528,7 +530,7 @@ class Mspec(models.Model):
                                 default='sums',
                                 null = True, blank = True)
     machine = models.CharField( max_length = 30,
-                                choices = (('Thermo', 'Thermo'), ('timsTOF', 'timsTOF'), ('Velos', 'Velos'), ('Elite', 'Elite')),
+                                choices = (('Thermo', 'Thermo'), ('timsTOF', 'timsTOF'), ('Velos', 'Velos'), ('Elite', 'Elite'), ('Fusion', 'Fusion')),
                                 help_text = 'Machine that was used to run the mass spec.',
                                 null = True, blank = True,
                                 default = 'timsTOF')

@@ -43,10 +43,12 @@ class Command(BaseCommand):
 
     def _process_byid( self, uid ):
 
-        row     = Preprocess.objects.get( pk = uid )
-        baitsym = b4us(row.bait_symbol_eid)
-        sample  = Sample.objects.get( pk = int(row.sampleid) )
-        self._process_dataset( row.rawfile, row.parser.upper(), baitsym, str(row.taxid), row.special, row.bgfile, row.mrmsfile, sample.id, 'Sample' )        
+        pproc   = Preproc.objects.get( pk = uid )
+        dproc   = Dproc.objects.get( pk = pproc.dpid_id)
+        psample = Psample.objects.get( pk = pproc.expid_id ) # this may not work - for tmt it clearly won't 
+        baitsym = psample.bait_symbol
+        self._process_dataset( dproc.rawfile, pproc.parser.upper(), baitsym, str(psample.taxid), pproc.special,
+                               dproc.bgfile, dproc.mrmsfile, dproc.id, 'Sample' )        
 
     def _process_by_preproc_id( self, uid ):
 
@@ -165,7 +167,7 @@ class Command(BaseCommand):
         else : 
             raise TypeError 
 
-        dataset.syncToEntrez( bestpepdb = pepDict[ org ], debug = True )
+        dataset.syncToEntrez( bestpepdb = pepDict[ org ], debug = False )
         if bgfilename and bgfilename != '': 
             dataset.set_background( bgpath + bgfilename, bestpepdb = pepDict[ org ] ) 
 
