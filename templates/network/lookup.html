@@ -1,4 +1,16 @@
 {% extends "base_generic.html" %}
+
+{% block scripts %}
+{{ block.super }}
+<script type="text/javascript" class="init">
+$(document).ready( function () {
+$('#lookup').DataTable({
+paging: false,
+"order": [[3, 'desc']]
+});
+} );
+</script>
+{% endblock %}
 {% block content %}
 <h1>Enter a symbol, select baits and organism, or select an experiment for lookup</h1>
 <form role="form" action="{% url 'network:lookup' %}" method="POST">
@@ -16,27 +28,31 @@
   experiment [<span style="color: red">{{ expt }}</span>]:</h4>
   
 
-<table class="table table-hover">
-  <tr>
-    <th>ifile</th>
-    <th>prey</th>
-    <th>rank</th>
-    <th>NSAF</th>
-    <th>PSMs</th>
-    <th>Length</th>
-    <th>Coverage</th>
-    <th>Unique peptides</th>
-    <th>Cell line</th>
-  </tr>
-    
+<table id = 'lookup' class="display">
+  <thead>
+    <tr>
+      <th>ifile</th>
+      <th>prey</th>
+      <th>rank</th>
+      <th>NSAF</th>
+      <th>PSMs</th>
+      <th>Length</th>
+      <th>Coverage</th>
+      <th>Unique peptides</th>
+      <th>Cell line</th>
+    </tr>
+  </thead>
+
+  <tbody>  
   {% for values in choices %}
-  <tr>
-    {% for v in values %}
+    <tr>
+      {% for v in values %}
       <td><b>{{ v }}</b></td>
-    {% endfor %}    
-  <tr>
+      {% endfor %}    
+    </tr>
   {% endfor %}
-    
+  </tbody>
+  
 </table>
 {% endif %}
 {% endblock %}

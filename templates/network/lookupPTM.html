@@ -1,4 +1,17 @@
 {% extends "base_generic.html" %}
+
+{% block scripts %}
+{{ block.super }}
+<script type="text/javascript" class="init">
+$(document).ready( function () {
+$('#lookupPTM').DataTable({
+paging: false,
+"order": [[3, 'desc']]
+});
+} );
+</script>
+{% endblock %}
+
 {% block content %}
 <h1>Enter a symbol and select baits, organisms and experiments for lookup</h1>
 <form role="form" action="{% url 'network:lookupPTM' %}" method="POST">
@@ -15,24 +28,28 @@
 <h4>in baits: <font color="RED">{{ bait }}</font></h4>
 <h4>in experiments: <font color="RED">{{ expt }}</font></h4>
 
-<table class="table table-hover">
-  <tr>
-    <th>dataset</th>
-    <th>description</th>
-    <th>residue</th>
-    <th>position</th>
-    <th>modified (peptide count)</th>
-    <th>all (peptide count)</th>
-    <th>percent modified</th>
-  </tr>
-    
-  {% for values in choices %}
-  <tr>
-    {% for v in values %}
+<table id='lookupPTM' class="display">
+  <thead>
+    <tr>
+      <th>dataset</th>
+      <th>description</th>
+      <th>residue</th>
+      <th>position</th>
+      <th>modified (peptide count)</th>
+      <th>all (peptide count)</th>
+      <th>percent modified</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {% for values in choices %}
+    <tr>
+      {% for v in values %}
       <td><b>{{ v }}</b></td>
-    {% endfor %}    
-  <tr>
-  {% endfor %}
+      {% endfor %}    
+    </tr>
+    {% endfor %}
+  </tbody>
     
 </table>
 {% endif %}
