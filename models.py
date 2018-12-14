@@ -530,7 +530,7 @@ class Mspec(models.Model):
                                 default='sums',
                                 null = True, blank = True)
     machine = models.CharField( max_length = 30,
-                                choices = (('Thermo', 'Thermo'), ('timsTOF', 'timsTOF'), ('Velos', 'Velos'), ('Elite', 'Elite'), ('Fusion', 'Fusion')),
+                                choices = (('Thermo', 'Thermo'), ('timsTOF', 'timsTOF'), ('Velos', 'Velos'), ('Elite', 'Elite'), ('Fusion', 'Fusion'), ('hfx', 'Exactive HF-X')),
                                 help_text = 'Machine that was used to run the mass spec.',
                                 null = True, blank = True,
                                 default = 'timsTOF')
@@ -755,7 +755,7 @@ class Fraction(models.Model):
                                help_text = 'Method used to generate fractions from sample. E.g." gel fractionation',
                                default = 'gelfrac',
                                editable = True,
-                               choices = (('gelfrac', 'gel fractionation'), ('hplc', 'HPLC'), ('solution', 'solution')),
+                               choices = (('gelfrac', 'gel fractionation'), ('hplc', 'HPLC'), ('solution', 'solution'), ('nofrac', 'no fractionation')),
                                blank=True, null=True)
     deriv = models.CharField( max_length = 50,
                               default = 'baa',
@@ -983,6 +983,7 @@ class SummaryView(models.Model):
     id = models.IntegerField(primary_key = True)
     sid = models.IntegerField()
     dpid = models.IntegerField()
+    ppid = models.IntegerField()    
     uid = models.CharField(max_length=20)
     name  = models.CharField(max_length=50)
     special = models.CharField( max_length = 50, blank = True, null = True)
@@ -999,6 +1000,7 @@ class SummaryView(models.Model):
     tag_length = models.IntegerField()
     taxid  = models.IntegerField(blank = True, null = True)
     facility = models.CharField( max_length = 5, choices = (('lane', "Bill Lane facility"), ('sums', 'SUMS'), ('other', 'Other'), ('jl', 'Jackson Lab')), blank = True, null = True)
+    machine = models.CharField( max_length = 30, blank = True, null = True )
     software = models.CharField( max_length = 30, choices = (('byonic', 'Byonic'), ('Other', 'Other')))
     rawfile = models.CharField(max_length=100, blank = True, null = True)
     bgfile = models.CharField(max_length=100, blank = True, null = True)

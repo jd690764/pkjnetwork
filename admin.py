@@ -209,11 +209,11 @@ class PreprocProxyInline(NestedStackedInline):
 @admin.register(SummaryView)
 class SummaryViewAdmin(admin.ModelAdmin):
 
-    list_display = ('sid', 'dpid', 'uid', 'name', 'special', 'experimenter', 'lab', 'bait', 'eid', 'variant',
-                    'cell_line', 'treatment', 'tag', 'tag_length', 'taxid', 'facility', 'software',
+    list_display = ('sid', 'dpid', 'ppid', 'uid', 'name', 'special', 'experimenter', 'lab', 'bait', 'eid', 'variant',
+                    'cell_line', 'treatment', 'tag', 'tag_length', 'taxid', 'facility', 'machine', 'software',
                     'rawfile', 'bgfile', 'ff_folder', 'date_back', 'discard', 'display')
     search_fields = ['name', 'bait', 'variant', 'cell_line', 'lab', 'treatment', 'tag',
-                     'facility', 'uid', 'special', 'experimenter']
+                     'facility', 'machine', 'uid', 'special', 'experimenter']
 
 @admin.register(Psample)
 class PsampleAdmin(NestedModelAdmin):
