@@ -31,7 +31,11 @@ class Command(BaseCommand):
             #action  = 'store_true',
             #dest    = 'buid',
             #default = False,
-            help    = 'Preprocess data from database by preproc.id. xxx --byid 1234 324 ...',
+            help    = 'Preprocess data by preproc.id:  --byid 1234 324 ...',
+        )
+        parser.add_argument(
+            '--score',
+            help    = 'Method to use for scoring interactions. Values: nsaf/nsaf_mod (default = nsaf)',
         )
         #parser.add_argument(
         #    '--byfile',
@@ -50,7 +54,7 @@ class Command(BaseCommand):
         self._process_dataset( dproc.rawfile, pproc.parser.upper(), baitsym, str(psample.taxid), pproc.special,
                                dproc.bgfile, dproc.mrmsfile, dproc.id, 'Sample' )        
 
-    def _process_by_preproc_id( self, uid ):
+    def _process_by_preproc_id( self, uid, method ):
 
         preproc = Preproc.objects.get( pk = uid )
         psample = Psample.objects.get( expid_id = int(preproc.expid_id))
@@ -58,7 +62,7 @@ class Command(BaseCommand):
         dproc   = Dproc.objects.get( pk = preproc.dpid_id )
         # yet to be written
         rawfile = ms.make_rawfile(dproc.id)
-        self._process_dataset( rawfile, preproc.parser.upper(), baitsym, str(psample.taxid), preproc.special, dproc.bgfile, dproc.mrmsfile, dproc.id, 'Dproc' )
+        self._process_dataset( rawfile, preproc.parser.upper(), baitsym, str(psample.taxid), preproc.special, dproc.bgfile, dproc.mrmsfile, dproc.id, 'Dproc', method )
         
     def _process_byfile( self ):
 
@@ -87,7 +91,7 @@ class Command(BaseCommand):
             self._process_dataset( infilename, parser.upper(), baitsym, str(org), special, bgfilename, mrmsfile, -1 )
 
 
-    def _process_dataset( self, infilename, parser, baitsym, org, special, bgfilename, mrmsfile, sid, table ):
+    def _process_dataset( self, infilename, parser, baitsym, org, special, bgfilename, mrmsfile, sid, table, method ):
 
         if special and special[0] == '*' : 
             outfname_pfx   =    special[1:]
@@ -172,7 +176,7 @@ class Command(BaseCommand):
             dataset.set_background( bgpath + bgfilename, bestpepdb = pepDict[ org ] ) 
 
         dataset.setBait(baitsym)
-        dataset.score()
+        dataset.score(method = method)
         # if there are older version of this file move them into a separate folder
         prev_file = [f for f in os.listdir(ipath) if re.search(outfname_pfx + '\d+\.i$', f)]
         for pf in prev_file:
@@ -185,9 +189,13 @@ class Command(BaseCommand):
         #    print( 'Preprocess from backgrounder.tsv file.' )
         #    self._process_byfile()
         #elif options[ 'byid' ]:
+
+        if not options[ 'score' ]:
+            options[ 'score' ] = 'nsaf'
+        
         for uid in options[ 'byid' ]:
             print( 'Preprocess from by id from database: ' + str(uid) )
-            self._process_by_preproc_id( uid )
+            self._process_by_preproc_id( uid, options[ 'score' ])
 
 
     
